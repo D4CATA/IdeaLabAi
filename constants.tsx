@@ -6,11 +6,11 @@ export const FREE_TIER_GENERATIONS = 3;
 export const PRO_TIER_GENERATIONS = 999;
 
 export const ERROR_MESSAGES = {
-  GENERATION_LIMIT: "Database limit reached. Initialize Access Engine to keep going!",
-  GENERATION_FAILED: "The Access Engine is recalibrating. Try again in a few seconds.",
-  REFINEMENT_FAILED: "Refinement failed. Pattern complexity exceeded.",
-  RATE_LIMIT: "Too many requests. The Engine needs a moment to cool down.",
-  AUTH_FAILED: "Authentication failed. Please verify your credentials.",
+  GENERATION_LIMIT: "Neural capacity reached. Initialize core to continue.",
+  GENERATION_FAILED: "Pattern synthesis failed. Recalibrating sensors...",
+  REFINEMENT_FAILED: "Optimization rejected. Complexity too high.",
+  RATE_LIMIT: "Cooling systems active. Please wait 60 seconds.",
+  AUTH_FAILED: "Identity mismatch. Authorization denied.",
 };
 
 export const ICONS = {
@@ -26,8 +26,8 @@ export const ICONS = {
   Shield: () => (
     <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></svg>
   ),
-  Crown: () => (
-    <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7z"/></svg>
+  Pulse: () => (
+    <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
   ),
   Lock: () => (
     <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
@@ -43,6 +43,9 @@ export const ICONS = {
   ),
   ArrowRight: () => (
     <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+  ),
+  Bolt: () => (
+    <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
   )
 };
 
@@ -51,37 +54,35 @@ export const MOODS = ['Productive Flow', 'Disruptive Tech', 'Mindful Minimal', '
 export const PRODUCTS: Product[] = [
   {
     id: 'basic-kit',
-    name: 'Standard Pass',
-    description: 'Get started with a few winning ideas.',
+    name: 'Standard Node',
+    description: 'Entry-level access to neural patterns.',
     price: 10,
-    features: ['5 Blueprint Extractions', 'Viral Hook Logic', 'Tech Stack Guide']
+    features: ['5 Pattern Extractions', 'Viral Hook Synthesis', 'Tech Stack Blueprints']
   },
   {
     id: 'pro-engine',
-    name: '1.5M Idea Access',
-    description: 'Full unlimited access to our secret database.',
+    name: 'Infinite Engine',
+    description: 'Direct link to the 1.5M pattern core.',
     price: 29,
     popular: true,
-    features: ['Unlimited Extractions', 'Full 1.5M+ Database', 'Viral Vibe-Coding Mode', 'Priority VIP Support']
+    features: ['Unlimited Extractions', 'Full 1.5M Core Access', 'Viral Logic Override', 'Priority Neural Link']
   },
   {
     id: 'enterprise-suite',
-    name: 'CEO Master Suite',
-    description: 'Direct consultation and custom architecture.',
+    name: 'Architect Suite',
+    description: 'Hand-crafted systems for deep founders.',
     price: 99,
-    features: ['Custom AI Prompt Engineering', 'Direct Strategy Session', 'Full Business Model Audit', 'Direct Email Access']
+    features: ['Custom Prompt Tuning', 'Direct Architect Sync', 'Full Security Audit', 'Dedicated Engine Support']
   }
 ];
 
 export const SLOGANS = [
-  "Build what's already winning.",
-  "1.5M+ App Ideas for Success.",
-  "Consulting Engine Initialized.",
-  "Turn Vibe into Value.",
-  "The Solo Founder's Shortcut.",
-  "App Ideas for Real Money.",
-  "Code Less, Earn More.",
-  "1.5 Million Patterns. 1 Click."
+  "Execute the impossible.",
+  "1.5M Neural Patterns. 1 Click.",
+  "Precision Engineering for Founders.",
+  "Build what works.",
+  "No guessing. Just patterns.",
+  "AI Strategy Initialized."
 ];
 
 export const PAYPAL_BASE_URL = "https://www.paypal.com/paypalme/catalinsparios";

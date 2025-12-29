@@ -18,6 +18,7 @@ export interface MockUser {
 }
 
 const FIREBASE_API_KEY = "AIzaSyBqaMQx9gjG5b6uBeZAevPcmARf07w_arE";
+const GOOGLE_CLIENT_ID = "559431938164-8ti9pt8ekpgf9hkr2svgonnve8pn07lm.apps.googleusercontent.com";
 const DB_URL = "https://idealabai-973a0-default-rtdb.firebaseio.com";
 const AUTH_KEY = 'idealab_auth_session_v4';
 
@@ -59,6 +60,38 @@ const refreshSession = async (refreshToken: string): Promise<MockUser | null> =>
     console.error("Session refresh failed:", e);
     return null;
   }
+};
+
+const finalizeSignIn = async (data: any): Promise<MockUser> => {
+  const dbData = await getUserData(data.localId, data.idToken);
+  
+  const user: MockUser = {
+    uid: data.localId,
+    email: data.email,
+    emailVerified: data.emailVerified || false,
+    idToken: data.idToken,
+    refreshToken: data.refreshToken,
+    expiresAt: Date.now() + (parseInt(data.expiresIn) * 1000),
+    isPro: dbData?.isPro || false,
+    generationsLeft: dbData?.generationsLeft ?? 3,
+    createdAt: dbData?.createdAt || Date.now()
+  };
+
+  // Ensure user exists in DB
+  if (!dbData) {
+    await createOrUpdateUser(user.uid, {
+      uid: user.uid,
+      email: user.email,
+      isPro: false,
+      generationsLeft: 3,
+      createdAt: user.createdAt
+    }, data.idToken);
+  }
+
+  auth.currentUser = user;
+  localStorage.setItem(AUTH_KEY, JSON.stringify(user));
+  notifyListeners(user);
+  return user;
 };
 
 export const auth = {
@@ -108,23 +141,7 @@ export const auth = {
     const data = await response.json();
     if (data.error) throw new Error(data.error.message);
 
-    const dbData = await getUserData(data.localId, data.idToken);
-    
-    const user: MockUser = {
-      uid: data.localId,
-      email: data.email,
-      emailVerified: data.registered, // registered is often returned as true if existing
-      idToken: data.idToken,
-      refreshToken: data.refreshToken,
-      expiresAt: Date.now() + (parseInt(data.expiresIn) * 1000),
-      isPro: dbData?.isPro || false,
-      generationsLeft: dbData?.generationsLeft ?? 3,
-      createdAt: dbData?.createdAt || Date.now()
-    };
-
-    auth.currentUser = user;
-    localStorage.setItem(AUTH_KEY, JSON.stringify(user));
-    notifyListeners(user);
+    const user = await finalizeSignIn(data);
     return { user };
   },
 
@@ -140,26 +157,7 @@ export const auth = {
     const authData = await authResponse.json();
     if (authData.error) throw new Error(authData.error.message);
 
-    const newUser: MockUser = {
-      uid: authData.localId,
-      email: authData.email,
-      emailVerified: false,
-      idToken: authData.idToken,
-      refreshToken: authData.refreshToken,
-      expiresAt: Date.now() + (parseInt(authData.expiresIn) * 1000),
-      isPro: false,
-      generationsLeft: 3,
-      createdAt: Date.now()
-    };
-
-    // Save to DB
-    await createOrUpdateUser(newUser.uid, {
-      uid: newUser.uid,
-      email: newUser.email,
-      isPro: false,
-      generationsLeft: 3,
-      createdAt: newUser.createdAt
-    }, authData.idToken);
+    const user = await finalizeSignIn(authData);
 
     // Trigger Verification
     try {
@@ -168,10 +166,7 @@ export const auth = {
       console.warn("Failed to send initial verification email:", e);
     }
 
-    auth.currentUser = newUser;
-    localStorage.setItem(AUTH_KEY, JSON.stringify(newUser));
-    notifyListeners(newUser);
-    return { user: newUser };
+    return { user };
   },
 
   signOut: async () => {
@@ -211,10 +206,58 @@ export const auth = {
     return data;
   },
 
-  signInWithGoogle: async () => {
-    // Note: In a pure REST environment without SDK, this usually requires an OAuth token from a client side picker
-    // This is a placeholder for the integration pattern
-    throw new Error("Google Sign-In requires browser-side OAuth integration. Use Email/Password for this session.");
+  signInWithGoogle: async (): Promise<{ user: MockUser }> => {
+    return new Promise((resolve, reject) => {
+      if (typeof window === 'undefined' || !(window as any).google) {
+        return reject(new Error("Google Identity Services not loaded. Check your internet connection or browser settings."));
+      }
+
+      const google = (window as any).google;
+
+      google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: async (response: any) => {
+          try {
+            const firebaseRes = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithIdp?key=${FIREBASE_API_KEY}`, {
+              method: 'POST',
+              body: JSON.stringify({
+                postBody: `id_token=${response.credential}&providerId=google.com`,
+                requestUri: window.location.origin,
+                returnIdpCredential: true,
+                returnSecureToken: true
+              }),
+              headers: { 'Content-Type': 'application/json' }
+            });
+
+            const data = await firebaseRes.json();
+            if (data.error) throw new Error(data.error.message);
+
+            const user = await finalizeSignIn(data);
+            resolve({ user });
+          } catch (e) {
+            reject(e);
+          }
+        },
+        use_fedcm_for_prompt: false, // Explicitly disable FedCM to use classic One Tap/Popup flow and avoid NotAllowedError
+        auto_select: false,
+        cancel_on_tap_outside: true,
+        context: 'signin',
+        ux_mode: 'popup'
+      });
+
+      google.accounts.id.prompt((notification: any) => {
+        if (notification.isNotDisplayed()) {
+          console.warn("One Tap prompt not displayed:", notification.getNotDisplayedReason());
+          // Optional: Render standard sign-in button as fallback
+          const reason = notification.getNotDisplayedReason();
+          if (reason === 'opt_out_or_no_session') {
+            // This is expected if user isn't logged into Google or opted out
+          }
+        } else if (notification.isSkippedMoment()) {
+          console.warn("One Tap prompt skipped:", notification.getSkippedReason());
+        }
+      });
+    });
   }
 };
 
