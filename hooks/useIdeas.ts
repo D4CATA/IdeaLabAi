@@ -6,6 +6,8 @@ import { ERROR_MESSAGES } from '../constants';
 import { generateUUID, isRateLimitError } from '../utils/helpers';
 import { saveIdeaToVault, getSavedIdeas, deleteIdeaFromVault, auth } from '../services/firebase';
 
+const IDEAS_STORAGE_KEY = 'idealab_cached_session_ideas';
+
 export function useIdeas() {
   const [ideas, setIdeas] = useState<AppIdea[]>([]);
   const [vault, setVault] = useState<AppIdea[]>([]);
@@ -13,16 +15,43 @@ export function useIdeas() {
   const [error, setError] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Initialize Vault
+  // Load generated ideas from localStorage on mount
+  useEffect(() => {
+    const cached = localStorage.getItem(IDEAS_STORAGE_KEY);
+    if (cached) {
+      try {
+        setIdeas(JSON.parse(cached));
+      } catch (e) {
+        console.error("Failed to parse cached session ideas:", e);
+      }
+    }
+  }, []);
+
+  // Persist generated ideas to localStorage
+  useEffect(() => {
+    localStorage.setItem(IDEAS_STORAGE_KEY, JSON.stringify(ideas));
+  }, [ideas]);
+
+  // Initialize and Sync Vault based on Auth status
   useEffect(() => {
     const loadVault = async () => {
       if (auth.currentUser) {
-        const saved = await getSavedIdeas(auth.currentUser.uid);
-        setVault(saved.sort((a: any, b: any) => (b.savedAt || 0) - (a.savedAt || 0)));
+        try {
+          const saved = await getSavedIdeas(auth.currentUser.uid);
+          setVault(saved.sort((a: any, b: any) => (b.savedAt || 0) - (a.savedAt || 0)));
+        } catch (e) {
+          console.error("Vault sync failed:", e);
+        }
+      } else {
+        setVault([]);
       }
     };
+    
+    // Create a listener for auth changes if needed, but the current useAuth hook 
+    // and manual sync inside onAuthStateChanged already handles the reference update.
+    // We add auth.currentUser as dependency to trigger refresh when login completes.
     loadVault();
-  }, []);
+  }, [auth.currentUser?.uid]);
 
   const clearError = useCallback(() => setError(null), []);
 

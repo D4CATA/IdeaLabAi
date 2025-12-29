@@ -1,13 +1,13 @@
-
 import React from 'react';
 import { Product } from './types';
 
-export const FREE_TIER_GENERATIONS = 3;
-export const PRO_TIER_GENERATIONS = 999;
+export const FREE_TIER_GENERATIONS = 5;
+export const STARTER_TIER_GENERATIONS = 25;
+export const PRO_TIER_GENERATIONS = 999999;
 
 export const ERROR_MESSAGES = {
-  GENERATION_LIMIT: "Neural capacity reached. Initialize core to continue.",
-  GENERATION_FAILED: "Pattern synthesis failed. Recalibrating sensors...",
+  GENERATION_LIMIT: "Plan limit reached. Upgrade to continue extraction.",
+  GENERATION_FAILED: "Synthesis encountered an error. Please try again.",
   REFINEMENT_FAILED: "Optimization rejected. Complexity too high.",
   RATE_LIMIT: "Cooling systems active. Please wait 60 seconds.",
   AUTH_FAILED: "Identity mismatch. Authorization denied.",
@@ -53,36 +53,27 @@ export const MOODS = ['Productive Flow', 'Disruptive Tech', 'Mindful Minimal', '
 
 export const PRODUCTS: Product[] = [
   {
-    id: 'basic-kit',
-    name: 'Standard Node',
-    description: 'Entry-level access to neural patterns.',
-    price: 10,
-    features: ['5 Pattern Extractions', 'Viral Hook Synthesis', 'Tech Stack Blueprints']
+    id: 'starter',
+    name: 'Starter',
+    description: 'Perfect for individual developers.',
+    price: 9,
+    features: ['25 Extractions / mo', 'Viral Hook Synthesis', 'Tech Stack Blueprints']
   },
   {
-    id: 'pro-engine',
-    name: 'Infinite Engine',
-    description: 'Direct link to the 1.5M pattern core.',
-    price: 29,
+    id: 'pro',
+    name: 'Pro',
+    description: 'Best Value for builders.',
+    price: 19,
     popular: true,
-    features: ['Unlimited Extractions', 'Full 1.5M Core Access', 'Viral Logic Override', 'Priority Neural Link']
+    features: ['Unlimited Extractions', 'Full 1.5M Core Access', 'Priority Neural Link', 'Email Support']
   },
   {
-    id: 'enterprise-suite',
-    name: 'Architect Suite',
-    description: 'Hand-crafted systems for deep founders.',
-    price: 99,
-    features: ['Custom Prompt Tuning', 'Direct Architect Sync', 'Full Security Audit', 'Dedicated Engine Support']
+    id: 'business',
+    name: 'Business',
+    description: 'For power users and small teams.',
+    price: 49,
+    features: ['Everything in Pro', 'Custom Prompt Tuning', 'Dedicated Support', '3 Seat License']
   }
-];
-
-export const SLOGANS = [
-  "Execute the impossible.",
-  "1.5M Neural Patterns. 1 Click.",
-  "Precision Engineering for Founders.",
-  "Build what works.",
-  "No guessing. Just patterns.",
-  "AI Strategy Initialized."
 ];
 
 export const PAYPAL_BASE_URL = "https://www.paypal.com/paypalme/catalinsparios";

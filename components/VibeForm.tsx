@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { MOODS, ICONS } from '../constants';
 import { VibeState } from '../types';
@@ -10,10 +9,11 @@ interface VibeFormProps {
   onUpgradeClick: () => void;
   isLoading: boolean;
   isPro: boolean;
+  isVerified: boolean;
   generationsLeft: number;
 }
 
-const VibeForm: React.FC<VibeFormProps> = ({ vibe, setVibe, onGenerate, onUpgradeClick, isLoading, isPro, generationsLeft }) => {
+const VibeForm: React.FC<VibeFormProps> = ({ vibe, setVibe, onGenerate, onUpgradeClick, isLoading, isPro, isVerified, generationsLeft }) => {
   const handleTypeChange = (type: 'standard' | 'viral-vibe') => {
     if (type === 'viral-vibe' && !isPro) {
       onUpgradeClick();
@@ -120,9 +120,9 @@ const VibeForm: React.FC<VibeFormProps> = ({ vibe, setVibe, onGenerate, onUpgrad
       {/* Core Action */}
       <div className="pt-8 border-t border-slate-100">
         <button
-          onClick={onGenerate}
-          disabled={isLoading || (generationsLeft <= 0 && !isPro)}
-          className="group relative w-full h-20 overflow-hidden rounded-[2rem] shadow-2xl transition-all active:scale-[0.98] disabled:opacity-40"
+          onClick={() => isVerified && onGenerate()}
+          disabled={isLoading || !isVerified || (generationsLeft <= 0 && !isPro)}
+          className={`group relative w-full h-20 overflow-hidden rounded-[2rem] shadow-2xl transition-all active:scale-[0.98] disabled:opacity-40 ${!isVerified ? 'cursor-not-allowed grayscale' : ''}`}
         >
           {/* Animated Liquid Background */}
           <div className="absolute inset-0 bg-slate-900 transition-transform group-hover:scale-110 duration-700"></div>
@@ -130,7 +130,12 @@ const VibeForm: React.FC<VibeFormProps> = ({ vibe, setVibe, onGenerate, onUpgrad
           <div className="absolute inset-0 shimmer opacity-10"></div>
           
           <div className="relative z-10 flex items-center justify-center gap-5 text-white">
-            {isLoading ? (
+            {!isVerified ? (
+              <>
+                <ICONS.Lock />
+                <span className="tracking-hyper text-xs">VERIFICATION REQUIRED TO EXECUTE</span>
+              </>
+            ) : isLoading ? (
                <>
                  <div className="w-5 h-5 border-[3px] border-white/20 border-t-white rounded-full animate-spin"></div>
                  <span className="tracking-hyper text-xs">SYNTHESIZING PATTERNS...</span>
@@ -147,11 +152,19 @@ const VibeForm: React.FC<VibeFormProps> = ({ vibe, setVibe, onGenerate, onUpgrad
           </div>
         </button>
 
-        {!isPro && generationsLeft <= 0 && (
+        {!isPro && generationsLeft <= 0 && isVerified && (
           <div className="text-center mt-6 p-5 rounded-2xl bg-indigo-50 border border-indigo-100">
             <button onClick={onUpgradeClick} className="text-indigo-600 font-black text-[10px] uppercase tracking-widest hover:text-indigo-800 transition-all">
               NEURAL LIMIT REACHED. UNLOCK THE 1.5M CORE →
             </button>
+          </div>
+        )}
+        
+        {!isVerified && (
+          <div className="text-center mt-6 p-5 rounded-2xl bg-amber-50 border border-amber-100">
+             <p className="text-amber-800 font-bold text-[10px] uppercase tracking-widest leading-relaxed">
+               Identity Synthesis Incomplete. Check your email to activate features.
+             </p>
           </div>
         )}
       </div>

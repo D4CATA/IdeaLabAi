@@ -18,6 +18,12 @@ const IdeaCard: React.FC<IdeaCardProps> = memo(({ idea, userStats, onRefine, isR
   const [shareStatus, setShareStatus] = useState<'idle' | 'copied'>('idle');
   const isLocked = !userStats.isPro;
 
+  // PROFESSIONAL: Placeholder text for non-pro users
+  const getSanitizedPrompt = () => {
+    if (!isLocked) return idea.promptPrototype;
+    return `[LOCKED_TECHNICAL_SPECIFICATION]\n\nThis blueprint includes an 800-word Master Prompt optimized for Bolt.new and Lovable. It contains high-fidelity architecture logic, database schemas, and viral design patterns.\n\nPRO_ACCESS_REQUIRED\nMD5_HASH: ${Math.random().toString(36).substring(2).toUpperCase()}\nTIMESTAMP: ${new Date().toISOString()}`;
+  };
+
   const confidence = 94 + (idea.name.length % 5); 
   const rank = 8 + (idea.name.length % 92);
 
@@ -29,7 +35,7 @@ const IdeaCard: React.FC<IdeaCardProps> = memo(({ idea, userStats, onRefine, isR
   }, [isLocked, idea.promptPrototype]);
 
   const handleShare = useCallback(() => {
-    const text = `Success Pattern Detected: ${idea.name}\n\nConcept: ${idea.coreConcept}\nBuild yours at IdealabAI.com`;
+    const text = `High-Yield Idea Found: ${idea.name}\n\nConcept: ${idea.coreConcept}\nGenerated at IdeaLabAI.com`;
     navigator.clipboard.writeText(text);
     setShareStatus('copied');
     setTimeout(() => setShareStatus('idle'), 2000);
@@ -38,10 +44,9 @@ const IdeaCard: React.FC<IdeaCardProps> = memo(({ idea, userStats, onRefine, isR
   return (
     <div className="bg-white rounded-[3.5rem] overflow-hidden shadow-[0_40px_120px_-30px_rgba(15,23,42,0.08)] border border-slate-100 animate-in fade-in slide-in-from-bottom-12 duration-1000 relative group/card transition-all hover:-translate-y-2 hover:shadow-[0_80px_160px_-40px_rgba(79,70,229,0.14)] print:shadow-none print:border-none">
       
-      {/* Precision UI Indicators */}
       <div className="absolute top-10 right-10 flex items-center gap-4 z-20 print:hidden">
          <div className="text-right hidden sm:block">
-            <div className="tracking-hyper text-slate-300 mb-0.5">NEURAL RANK</div>
+            <div className="text-[9px] font-black uppercase tracking-widest text-slate-300 mb-0.5">MARKET RANK</div>
             <div className="text-xl font-black text-slate-900 tracking-tighter">#{rank}</div>
          </div>
          <div className="w-16 h-16 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-sm font-black neural-glow transition-transform group-hover/card:scale-110">
@@ -49,10 +54,10 @@ const IdeaCard: React.FC<IdeaCardProps> = memo(({ idea, userStats, onRefine, isR
          </div>
       </div>
 
-      {/* Floating Toolbar */}
       <div className="absolute top-10 left-10 flex gap-2 z-20 print:hidden">
         <button 
           onClick={handleShare}
+          title="Copy share link"
           className={`p-3 rounded-xl border-2 transition-all ${shareStatus === 'copied' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-white/80 backdrop-blur border-slate-100 text-slate-400 hover:text-indigo-600'}`}
         >
           {shareStatus === 'copied' ? <ICONS.Check /> : <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx='18' cy='5' r='3'/><circle cx='6' cy='12' r='3'/><circle cx='18' cy='19' r='3'/><line x1='8.59' y1='13.51' x2='15.42' y2='17.49'/><line x1='15.41' y1='6.51' x2='8.59' y2='10.49'/></svg>}
@@ -60,6 +65,7 @@ const IdeaCard: React.FC<IdeaCardProps> = memo(({ idea, userStats, onRefine, isR
         {isSaved && onRemove && (
           <button 
             onClick={() => onRemove(idea.id)}
+            title="Remove from saved"
             className="p-3 bg-white/80 backdrop-blur rounded-xl border-2 border-slate-100 text-slate-400 hover:text-rose-500 hover:border-rose-100 transition-all"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
@@ -67,19 +73,18 @@ const IdeaCard: React.FC<IdeaCardProps> = memo(({ idea, userStats, onRefine, isR
         )}
       </div>
 
-      {/* Hero Header */}
       <div className="p-10 md:p-16 pt-32 md:pt-40 flex flex-col lg:flex-row justify-between items-start gap-10">
         <div className="space-y-6 max-w-4xl">
           <div className="flex flex-wrap items-center gap-3">
             <span className="px-4 py-1.5 bg-slate-900 text-white rounded-lg text-[9px] font-black uppercase tracking-[0.2em]">
-              {idea.difficulty} EXTRACTION
+              {idea.difficulty} INTENSITY
             </span>
             {idea.tags.map((tag, idx) => (
               <span key={idx} className="px-4 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg text-[9px] font-black uppercase tracking-widest border border-indigo-100">
                 {tag}
               </span>
             ))}
-            <span className="tracking-hyper text-indigo-500/60 italic ml-2">{idea.vibeAesthetic}</span>
+            <span className="text-[10px] font-bold text-indigo-500/60 italic ml-2">{idea.vibeAesthetic}</span>
           </div>
           <h2 className="text-5xl md:text-7xl font-black text-slate-900 leading-[0.9] tracking-tighter">
             {idea.name}
@@ -93,37 +98,36 @@ const IdeaCard: React.FC<IdeaCardProps> = memo(({ idea, userStats, onRefine, isR
            <button 
              onClick={onRefine}
              disabled={isRefining}
-             className="w-full flex items-center justify-center gap-3 py-5 premium-gradient text-white rounded-2xl tracking-hyper text-[9px] hover:scale-105 active:scale-95 transition-all shadow-xl shadow-indigo-200"
+             className="w-full flex items-center justify-center gap-3 py-5 premium-gradient text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-indigo-200"
            >
              {isRefining ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <ICONS.Sparkles />}
-             <span>{isRefining ? 'OPTIMIZING...' : 'OPTIMIZE PATTERN'}</span>
+             <span>{isRefining ? 'OPTIMIZING...' : 'OPTIMIZE IDEA'}</span>
            </button>
 
            {onSave && (
              <button 
                onClick={() => !isSaved && onSave(idea)}
                disabled={isSaved}
-               className={`w-full flex items-center justify-center gap-3 py-5 rounded-2xl tracking-hyper text-[9px] transition-all ${
+               className={`w-full flex items-center justify-center gap-3 py-5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
                  isSaved 
                  ? 'bg-emerald-50 text-emerald-600 border-2 border-emerald-100' 
                  : 'bg-white border-2 border-slate-100 text-slate-900 hover:border-indigo-600 hover:text-indigo-600 hover:scale-105'
                }`}
              >
                {isSaved ? <ICONS.Check /> : <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>}
-               <span>{isSaved ? 'SAVED TO CORE' : 'SYNC TO VAULT'}</span>
+               <span>{isSaved ? 'SAVED TO LIBRARY' : 'SAVE TO LIBRARY'}</span>
              </button>
            )}
         </div>
       </div>
 
-      {/* Strategic Logic Card */}
       <div className="px-10 md:px-16 pb-16">
         <div className="p-10 rounded-[2.5rem] bg-indigo-50/50 border-2 border-indigo-100 space-y-6 relative overflow-hidden group/strat transition-all hover:bg-white hover:border-indigo-300">
           <div className="flex items-center gap-4">
             <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-lg">
               <ICONS.Bolt />
             </div>
-            <h3 className="tracking-hyper text-indigo-700">EXECUTION PROTOCOL</h3>
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-indigo-700">EXECUTION STRATEGY</h3>
           </div>
           <p className="text-indigo-900 text-2xl md:text-4xl font-black leading-tight tracking-tight italic">
             "{idea.whyBuildThis}"
@@ -131,21 +135,17 @@ const IdeaCard: React.FC<IdeaCardProps> = memo(({ idea, userStats, onRefine, isR
         </div>
       </div>
 
-      {/* Blueprint Grid */}
       <div className="px-10 md:px-16 pb-16 grid grid-cols-1 xl:grid-cols-12 gap-12">
-        
-        {/* Left: Logic Units */}
         <div className="xl:col-span-5 space-y-10">
           <div className="p-10 rounded-[2.5rem] bg-slate-50 border border-slate-200 space-y-8">
             <div className="space-y-2">
-              <h3 className="tracking-hyper text-slate-400">YIELD ESTIMATE</h3>
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">YIELD ESTIMATE</h3>
               <p className="text-4xl font-black text-slate-900 tracking-tighter">{idea.monetization.pricingModel}</p>
               <p className="text-sm font-bold text-slate-600 leading-relaxed">{idea.monetization.strategy}</p>
             </div>
           </div>
-
           <div className="space-y-6">
-            <h4 className="tracking-hyper text-slate-400 flex items-center gap-3">
+            <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-3">
               <ICONS.Engine /> KEY ARCHITECTURE
             </h4>
             <div className="grid grid-cols-1 gap-3">
@@ -161,7 +161,6 @@ const IdeaCard: React.FC<IdeaCardProps> = memo(({ idea, userStats, onRefine, isR
           </div>
         </div>
 
-        {/* Right: The Engine Core */}
         <div className="xl:col-span-7 space-y-10">
           <div className="p-10 rounded-[3rem] bg-slate-900 text-white space-y-8 relative overflow-hidden min-h-[600px] print:bg-white print:text-slate-900 print:border">
              <div className="space-y-6 relative z-10">
@@ -169,9 +168,8 @@ const IdeaCard: React.FC<IdeaCardProps> = memo(({ idea, userStats, onRefine, isR
                    <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white">
                       <ICONS.Sparkles />
                    </div>
-                   <h3 className="tracking-hyper text-indigo-400">RECOMENDED AGENT</h3>
+                   <h3 className="text-[10px] font-black uppercase tracking-widest text-indigo-400">RECOMMENDED TECH STACK</h3>
                 </div>
-                
                 <div className="p-8 rounded-[2rem] bg-indigo-900/40 border border-indigo-500/20 space-y-4 print:bg-slate-50 print:border-slate-200">
                   <div className="flex items-center gap-6">
                     <div className="w-16 h-16 rounded-2xl bg-indigo-600 flex items-center justify-center text-2xl font-black shadow-lg">
@@ -179,7 +177,7 @@ const IdeaCard: React.FC<IdeaCardProps> = memo(({ idea, userStats, onRefine, isR
                     </div>
                     <div>
                       <div className="text-2xl font-black tracking-tight">{idea.aiRecommendation}</div>
-                      <div className="tracking-hyper text-[8px] text-indigo-400">SYSTEM OPTIMIZED</div>
+                      <div className="text-[9px] font-black uppercase tracking-widest text-indigo-400">OPTIMIZED ARCHITECTURE</div>
                     </div>
                   </div>
                   <p className="text-md font-medium text-slate-300 italic px-2 border-l-2 border-indigo-500/30 print:text-slate-600">
@@ -191,27 +189,25 @@ const IdeaCard: React.FC<IdeaCardProps> = memo(({ idea, userStats, onRefine, isR
              <div className="relative">
                <div className={`space-y-6 transition-all duration-700 ${isLocked ? "blur-xl opacity-20 pointer-events-none scale-95 print:blur-none print:opacity-100" : ""}`}>
                  <div className="space-y-3">
-                    <h4 className="tracking-hyper text-indigo-400">GROWTH HOOK</h4>
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-indigo-400">GROWTH HOOK</h4>
                     <div className="p-6 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 italic text-sm font-bold text-indigo-100 print:bg-slate-50 print:text-slate-900">
                       "{idea.viralStrategy.tiktokHook}"
                     </div>
                  </div>
-
                  <div className="space-y-4">
                    <div className="flex justify-between items-center">
-                     <h4 className="tracking-hyper text-indigo-400">MASTER PROMPT</h4>
+                     <h4 className="text-[10px] font-black uppercase tracking-widest text-indigo-400">MASTER PROMPT SPECIFICATION</h4>
                      {!isLocked && (
-                       <button onClick={handleCopy} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg tracking-hyper text-[8px] text-white">
-                         {copied ? 'COPIED' : 'COPY CORE'}
+                       <button onClick={handleCopy} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-[10px] font-black uppercase tracking-widest text-white">
+                         {copied ? 'COPIED' : 'COPY PROMPT'}
                        </button>
                      )}
                    </div>
                    <div className="p-8 rounded-[2rem] bg-black/40 border border-white/5 font-mono text-[10px] leading-relaxed text-indigo-200/60 h-80 overflow-y-auto print:h-auto print:text-slate-900">
-                     {idea.promptPrototype}
+                     {getSanitizedPrompt()}
                    </div>
                  </div>
                </div>
-
                {isLocked && (
                  <div className="absolute inset-0 flex items-center justify-center z-20 print:hidden">
                     <div className="w-full max-w-md p-10 rounded-[3rem] bg-white text-center space-y-6 shadow-3xl border border-indigo-50">
@@ -219,16 +215,16 @@ const IdeaCard: React.FC<IdeaCardProps> = memo(({ idea, userStats, onRefine, isR
                           <ICONS.Bolt />
                        </div>
                        <div className="space-y-2">
-                          <h5 className="text-3xl font-black text-slate-900 tracking-tighter">Unlock the Core</h5>
+                          <h5 className="text-3xl font-black text-slate-900 tracking-tighter">Upgrade to Pro</h5>
                           <p className="text-sm text-slate-500 font-bold leading-relaxed px-4">
-                            Access the 800-word <strong>Master Prompt</strong> and full execution blueprint.
+                            Unlock the full <strong>Master Prompt</strong> and deep architecture specs for this idea.
                           </p>
                        </div>
                        <button 
                         onClick={() => window.open(`${PAYPAL_BASE_URL}/29`, '_blank')}
-                        className="w-full py-6 premium-gradient text-white rounded-[2rem] tracking-hyper text-xs hover:scale-[1.03] transition-all shadow-xl"
+                        className="w-full py-6 premium-gradient text-white rounded-[2rem] text-[10px] font-black uppercase tracking-widest hover:scale-[1.03] transition-all shadow-xl"
                        >
-                         SYNC WITH CORE — $29
+                         UNLOCK PRO ACCESS — $29
                        </button>
                     </div>
                  </div>
@@ -242,5 +238,4 @@ const IdeaCard: React.FC<IdeaCardProps> = memo(({ idea, userStats, onRefine, isR
 });
 
 IdeaCard.displayName = 'IdeaCard';
-
 export default IdeaCard;

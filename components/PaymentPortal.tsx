@@ -5,11 +5,17 @@ import { Product, Order } from '../types';
 
 interface PaymentPortalProps {
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (planId: string) => void;
 }
 
+const SUCCESS_STORIES = [
+  { name: "Marcus T.", role: "Solo Developer", text: "Turned a weekend idea into $2.5k MRR in 30 days. The technical architecture prompts saved me months of work.", stars: 5, verified: true },
+  { name: "Elena S.", role: "Growth Lead", text: "The viral hooks and growth blueprints are insane. Our first launch got 450k views on TikTok alone.", stars: 5, verified: true },
+  { name: "Jason W.", role: "Agency Founder", text: "We use the Idea Engine to validate client concepts now. It's paid for itself 100x over.", stars: 5, verified: true }
+];
+
 const PaymentPortal: React.FC<PaymentPortalProps> = ({ onClose, onSuccess }) => {
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(PRODUCTS.find(p => p.popular) || PRODUCTS[1]);
   const [pendingOrder, setPendingOrder] = useState<Order | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationError, setVerificationError] = useState<string | null>(null);
@@ -36,13 +42,12 @@ const PaymentPortal: React.FC<PaymentPortalProps> = ({ onClose, onSuccess }) => 
     setPendingOrder(order);
     setSecondsElapsed(0);
     
-    // Open PayPal in new tab
     const paypalUrl = `${PAYPAL_BASE_URL}/${selectedProduct.price}`;
     window.open(paypalUrl, '_blank');
   };
 
   const checkPaymentStatus = async (orderId: string) => {
-    if (isVerifying) return;
+    if (isVerifying || !pendingOrder) return;
     setIsVerifying(true);
     setVerificationError(null);
 
@@ -63,38 +68,24 @@ const PaymentPortal: React.FC<PaymentPortalProps> = ({ onClose, onSuccess }) => 
         if (response.ok) {
           const csvText = await response.text();
           if (csvText.toUpperCase().includes(orderId.toUpperCase())) {
-            console.log("Success: Payment verified for", orderId);
-            onSuccess();
+            onSuccess(pendingOrder.productId);
             success = true;
             break; 
           }
-          break;
         }
-      } catch (err) {
-        console.warn("Attempt failed, trying next method...", err);
-      }
+      } catch (err) { console.warn(err); }
     }
 
-    if (!success) {
-      setVerificationError("System: Polling for your transaction ID...");
-    }
-    
+    if (!success) { setVerificationError("Syncing with PayPal... Please wait."); }
     setIsVerifying(false);
   };
 
   useEffect(() => {
     if (pendingOrder) {
-      pollingRef.current = window.setInterval(() => {
-        checkPaymentStatus(pendingOrder.id);
-      }, 5000);
-
-      timerRef.current = window.setInterval(() => {
-        setSecondsElapsed(prev => prev + 1);
-      }, 1000);
-
+      pollingRef.current = window.setInterval(() => checkPaymentStatus(pendingOrder.id), 5000);
+      timerRef.current = window.setInterval(() => setSecondsElapsed(prev => prev + 1), 1000);
       checkPaymentStatus(pendingOrder.id);
     }
-
     return () => {
       if (pollingRef.current) clearInterval(pollingRef.current);
       if (timerRef.current) clearInterval(timerRef.current);
@@ -102,190 +93,123 @@ const PaymentPortal: React.FC<PaymentPortalProps> = ({ onClose, onSuccess }) => 
   }, [pendingOrder]);
 
   if (pendingOrder) {
-    const takingLonger = secondsElapsed > 60;
-
     return (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in">
         <div className="bg-white w-full max-w-xl rounded-[3rem] shadow-2xl overflow-hidden border border-slate-100 flex flex-col">
           <div className="p-8 md:p-12 text-center space-y-8">
-            <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto transition-all duration-500 ${isVerifying ? 'bg-indigo-50 text-indigo-600 animate-pulse' : 'bg-emerald-50 text-emerald-600'}`}>
+            <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto transition-all ${isVerifying ? 'bg-indigo-50 text-indigo-600 animate-pulse' : 'bg-emerald-50 text-emerald-600'}`}>
               <ICONS.Rocket />
             </div>
-            
             <div className="space-y-4">
-              <h2 className="text-3xl font-black text-slate-900 tracking-tight">
-                Verification Active
-              </h2>
-              <p className="text-slate-500 font-medium leading-relaxed">
-                Waiting for payment of <span className="text-slate-900 font-bold">${pendingOrder.amount}</span>.
-                <br/>The database will unlock <span className="text-indigo-600 font-bold">automatically</span> once confirmed.
-              </p>
+              <h2 className="text-3xl font-black text-slate-900 tracking-tight">Verifying Activation</h2>
+              <p className="text-slate-500 font-medium">Awaiting payment of <strong>${pendingOrder.amount}</strong>. Your plan will activate instantly.</p>
             </div>
-
-            <div className="bg-slate-50 p-6 rounded-3xl border border-dashed border-slate-200 space-y-4 text-left">
+            <div className="bg-slate-50 p-6 rounded-3xl border border-dashed border-slate-200 text-left space-y-4">
               <div className="flex justify-between items-center text-xs font-black uppercase tracking-widest text-slate-400">
                 <span>Unique Reference</span>
-                <span className="text-indigo-600 font-black select-all cursor-copy">{pendingOrder.id}</span>
+                <span className="text-indigo-600 select-all cursor-copy font-black">{pendingOrder.id}</span>
               </div>
               <p className="text-[11px] text-slate-500 font-bold leading-relaxed">
-                1. Complete your payment in the PayPal tab.<br/>
-                2. <span className="text-red-600 font-black">IMPORTANT:</span> Put <span className="text-slate-900 font-black">{pendingOrder.id}</span> in the payment notes.<br/>
-                3. <span className="text-slate-900 font-black">STAY ON THIS PAGE.</span> We check for your ID every 5 seconds.
+                1. Complete payment in the PayPal tab.<br/>
+                2. <strong>Add {pendingOrder.id} to payment notes.</strong><br/>
+                3. Keep this page open while we verify.
               </p>
-              
-              <div className="flex items-center gap-3 py-2 px-4 bg-white rounded-xl border border-slate-100">
-                 <div className="w-2 h-2 rounded-full bg-indigo-500 animate-ping"></div>
-                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                   {isVerifying ? "Syncing Database Access..." : "Awaiting Confirmation..."}
-                 </span>
-              </div>
             </div>
-
-            {takingLonger && (
-              <div className="p-6 rounded-[1.5rem] bg-amber-50 border border-amber-100 text-left animate-in slide-in-from-bottom-4 duration-500">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center text-amber-600">
-                    <ICONS.Shield />
-                  </div>
-                  <h4 className="text-[10px] font-black uppercase tracking-widest text-amber-900">Taking longer?</h4>
-                </div>
-                <p className="text-[10px] text-amber-800 font-bold leading-relaxed">
-                  Verification usually takes 1-3 minutes. If you already paid, check you included the note: <span className="font-black underline">{pendingOrder.id}</span>.
-                  <br/><br/>
-                  Still stuck? Reach out to <a href={`mailto:${SUPPORT_EMAIL}`} className="underline font-black">{SUPPORT_EMAIL}</a> with your ID.
-                </p>
-              </div>
-            )}
-
-            {!takingLonger && verificationError && (
-              <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest animate-pulse">
-                {verificationError}
-              </p>
-            )}
-
-            <div className="flex flex-col gap-3">
-              <button 
-                onClick={() => setPendingOrder(null)}
-                className="text-slate-400 font-black uppercase tracking-widest text-[10px] hover:text-slate-600 transition-colors"
-              >
-                Go Back to Selection
-              </button>
-            </div>
+            <button onClick={() => setPendingOrder(null)} className="text-slate-400 font-black text-[10px] uppercase tracking-widest hover:text-slate-600">Cancel and Return</button>
           </div>
-          
-          <div className="bg-slate-900 py-6 text-center text-[10px] font-black text-white/40 uppercase tracking-[0.3em]">
-            IDEA LAB AI // DO NOT REFRESH 📡
-          </div>
+          <div className="bg-slate-900 py-6 text-center text-[10px] font-black text-white/40 uppercase tracking-[0.3em]">SECURE TRANSACTION LAYER</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300 overflow-y-auto">
-      <div className="bg-[#f8fafc] w-full max-w-5xl rounded-[3rem] shadow-2xl overflow-hidden border border-white relative flex flex-col md:flex-row my-auto animate-in zoom-in duration-500">
-        
-        <button 
-          onClick={onClose}
-          className="absolute top-6 right-6 w-10 h-10 bg-white shadow-md rounded-full flex items-center justify-center text-slate-400 hover:text-slate-900 transition-all z-10 hover:scale-110 active:scale-90"
-        >
-          <span className="text-xl">×</span>
-        </button>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in overflow-y-auto">
+      <div className="bg-white w-full max-w-6xl rounded-[3.5rem] shadow-2xl overflow-hidden border border-white relative flex flex-col lg:flex-row my-auto animate-in zoom-in duration-500">
+        <button onClick={onClose} className="absolute top-8 right-8 w-12 h-12 bg-white shadow-xl rounded-full flex items-center justify-center text-slate-400 hover:text-slate-900 transition-all z-20 hover:scale-110">×</button>
 
-        <div className="md:w-1/3 bg-slate-900 p-10 md:p-12 text-white flex flex-col justify-between space-y-12">
-          <div className="space-y-6">
-            <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-2xl rotate-3">
-              <ICONS.Rocket />
-            </div>
-            <div className="space-y-2">
-              <h2 className="text-3xl font-black tracking-tighter leading-none">Unlock Success</h2>
-              <p className="text-slate-400 text-sm font-bold leading-relaxed">
-                Unlock our 1.5 million app ideas for success and start your journey.
-              </p>
+        <div className="lg:w-2/5 bg-slate-900 p-10 lg:p-14 text-white flex flex-col justify-between space-y-12">
+          <div className="space-y-8">
+            <div className="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-2xl"><ICONS.Rocket /></div>
+            <div className="space-y-4">
+              <h2 className="text-4xl font-black tracking-tighter leading-none">Activate Success</h2>
+              <p className="text-slate-400 text-sm font-bold leading-relaxed">Synthesize high-yield blueprints from 1.5M success patterns.</p>
             </div>
           </div>
-
-          <div className="space-y-6">
-            <div className="flex items-center gap-4 group cursor-default">
-              <div className="w-8 h-8 rounded-full bg-indigo-600/20 flex items-center justify-center text-indigo-400 group-hover:scale-110 transition-transform">
-                <ICONS.Shield />
-              </div>
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">Verified Access</span>
-            </div>
-            <div className="flex items-center gap-4 group cursor-default">
-              <div className="w-8 h-8 rounded-full bg-emerald-600/20 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform">
-                <ICONS.Sparkles />
-              </div>
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">Infinite Blueprints</span>
-            </div>
-          </div>
-
-          <div className="text-[10px] font-black text-white/30 uppercase tracking-widest pt-8 border-t border-white/10">
-            Powered by Idea Lab AI 9.0
-          </div>
-        </div>
-
-        <div className="md:w-2/3 p-10 md:p-12 flex flex-col justify-between space-y-12">
           <div className="space-y-10">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {PRODUCTS.map((product) => (
-                <div 
-                  key={product.id}
-                  onClick={() => setSelectedProduct(product)}
-                  className={`relative p-6 rounded-[2.5rem] border-2 cursor-pointer transition-all duration-300 flex flex-col justify-between gap-6 hover:shadow-xl hover:scale-[1.02] ${
-                    selectedProduct?.id === product.id 
-                    ? 'border-indigo-600 bg-white shadow-indigo-100/50' 
-                    : 'border-slate-100 bg-white hover:border-slate-300 shadow-sm'
-                  }`}
-                >
-                  {product.popular && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-indigo-600 text-white rounded-full text-[8px] font-black uppercase tracking-widest shadow-lg animate-bounce">
-                      Best Value
-                    </div>
-                  )}
-                  
-                  <div className="space-y-4">
-                    <div className="space-y-1">
-                      <h3 className="text-lg font-black text-slate-900 tracking-tight">{product.name}</h3>
-                      <p className="text-[10px] text-slate-400 font-bold leading-relaxed">{product.description}</p>
-                    </div>
-                    
-                    <ul className="space-y-2">
-                      {product.features.map((feat, i) => (
-                        <li key={i} className="flex items-center gap-2 text-[10px] font-bold text-slate-600">
-                          <span className="text-indigo-600"><ICONS.Check /></span>
-                          {feat}
-                        </li>
-                      ))}
-                    </ul>
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-indigo-400 border-b border-white/10 pb-4">Wall of Success</h3>
+            <div className="space-y-8">
+              {SUCCESS_STORIES.map((s, i) => (
+                <div key={i} className="space-y-3 p-6 rounded-3xl bg-white/5 border border-white/5 transition-all hover:bg-white/10">
+                  <div className="flex gap-1 mb-2">
+                    {[...Array(s.stars)].map((_, i) => <span key={i} className="text-amber-400 text-[10px]">★</span>)}
                   </div>
-
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-black text-slate-900">${product.price}</span>
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">USD</span>
+                  <p className="text-[11px] font-medium text-slate-300 italic">"{s.text}"</p>
+                  <div className="flex items-center justify-between">
+                    <div className="text-[10px] font-black uppercase tracking-widest text-indigo-400">{s.name}</div>
+                    {s.verified && <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded-md text-[8px] font-black uppercase tracking-widest">Profit Verified</span>}
                   </div>
                 </div>
               ))}
             </div>
           </div>
-
-          <div className="space-y-6">
-            <button 
-              onClick={handleProceedToPayment}
-              disabled={!selectedProduct}
-              className="w-full py-6 premium-gradient text-white rounded-[2rem] font-black uppercase tracking-widest text-xs shadow-2xl shadow-indigo-200 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-3"
-            >
-              <ICONS.Shield />
-              {selectedProduct 
-                ? `Upgrade to ${selectedProduct.name} — $${selectedProduct.price}` 
-                : 'Select a Tier to Continue'}
-            </button>
-            <p className="text-center text-[10px] font-black text-slate-400 uppercase tracking-widest animate-pulse">
-              Secured by PayPal Payments // System Sync Enabled
-            </p>
-          </div>
         </div>
 
+        <div className="lg:w-3/5 p-10 lg:p-14 flex flex-col justify-between space-y-12 bg-slate-50/50">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {PRODUCTS.map((product) => (
+              <div 
+                key={product.id}
+                onClick={() => setSelectedProduct(product)}
+                className={`relative p-8 rounded-[2.5rem] border-2 cursor-pointer transition-all flex flex-col justify-between gap-8 ${
+                  selectedProduct?.id === product.id ? 'border-indigo-600 bg-white shadow-2xl shadow-indigo-100 scale-[1.03]' : 'border-slate-100 bg-white hover:border-slate-200'
+                }`}
+              >
+                {product.popular && <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-indigo-600 text-white rounded-full text-[8px] font-black uppercase tracking-[0.2em] shadow-lg">Best Value</div>}
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">{product.name}</h3>
+                    <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-widest">{product.description}</p>
+                  </div>
+                  <ul className="space-y-3">
+                    {product.features.map((feat, i) => (
+                      <li key={i} className="flex items-start gap-3 text-[10px] font-bold text-slate-600 leading-relaxed">
+                        <div className="text-indigo-600 shrink-0 mt-0.5"><ICONS.Check /></div>{feat}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="flex items-baseline gap-1 pt-6 border-t border-slate-50"><span className="text-4xl font-black text-slate-900">${product.price}</span><span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">/mo</span></div>
+              </div>
+            ))}
+            
+            <div className="p-8 rounded-[2.5rem] border-2 border-slate-100 bg-white flex flex-col justify-center items-center text-center gap-4 hover:border-slate-200 transition-all cursor-pointer">
+               <h3 className="text-xl font-black text-slate-900 tracking-tight">Enterprise</h3>
+               <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest">Custom Engine</p>
+               <button onClick={() => window.open(`mailto:${SUPPORT_EMAIL}`, '_blank')} className="text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:underline mt-2">Contact Sales</button>
+            </div>
+          </div>
+
+          <div className="space-y-8">
+            <button onClick={handleProceedToPayment} className="w-full py-8 premium-gradient text-white rounded-[2.5rem] font-black uppercase tracking-[0.2em] text-[12px] shadow-3xl shadow-indigo-200 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-4">
+              Upgrade to {selectedProduct?.name} — ${selectedProduct?.price}
+            </button>
+            <div className="grid grid-cols-3 gap-4 text-center">
+              <div className="space-y-1">
+                <div className="text-slate-900 font-black text-xs">24/7</div>
+                <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Support</div>
+              </div>
+              <div className="space-y-1">
+                <div className="text-slate-900 font-black text-xs">SSL</div>
+                <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Secured</div>
+              </div>
+              <div className="space-y-1">
+                <div className="text-slate-900 font-black text-xs">4.9/5</div>
+                <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Rating</div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

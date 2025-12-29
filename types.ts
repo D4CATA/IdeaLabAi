@@ -2,7 +2,7 @@
 export type LoadingStatus = 'idle' | 'generating' | 'refining';
 
 export interface AppIdea {
-  id: string; // Unique ID for key mapping
+  id: string;
   name: string;
   tags: string[];
   vibeAesthetic: string;
@@ -64,4 +64,10 @@ export interface Order {
   amount: number;
   status: 'pending' | 'completed';
   timestamp: number;
+}
+
+export interface ToastMessage {
+  id: string;
+  type: 'success' | 'error' | 'info' | 'warning';
+  message: string;
 }

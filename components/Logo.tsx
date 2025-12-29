@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 // Refined Neural Mesh Logo (Background-free)
@@ -64,8 +63,8 @@ export const IdeaLabLogoFull = ({ size = "md" }: { size?: "sm" | "md" | "lg" }) 
         <span className={`${current.text} font-black tracking-tighter text-slate-900 leading-none group-hover:text-indigo-600 transition-colors`}>
           IDEA LAB AI
         </span>
-        <span className="tracking-hyper text-indigo-600 mt-0.5">
-          SUCCESS CORE v12
+        <span className="text-[9px] font-black uppercase tracking-widest text-indigo-600 mt-0.5">
+          Success Engine
         </span>
       </div>
     </div>
