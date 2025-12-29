@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { AppIdea, VibeState } from "../types";
 
@@ -83,28 +84,33 @@ const APP_IDEA_SCHEMA = {
   ]
 };
 
+const cleanJsonResponse = (text: string) => {
+  return text.replace(/```json/g, "").replace(/```/g, "").trim();
+};
+
 export const generateAppIdea = async (vibe: VibeState): Promise<AppIdea> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   const prompt = `Act as an App Success Architect with access to 1.5 million viral patterns.
     
-    TASK: Generate a viral, money-making app idea.
+    TASK: Generate a viral, money-making app idea for the ACCESS ENGINE.
     VIBE CODING TOOLS TO CHOOSE FROM: Bolt.new, Lovable.dev, Replit Agent, Cursor, v0.dev.
 
     RULES:
     1. VIBE CODING FOCUS: Design a killer aesthetic.
     2. STRATEGY: Be clear on why this makes money.
-    3. AI TOOL REASONING: Explain EXACTLY why the chosen Vibe Coding tool (Bolt, Lovable, Replit, Cursor, or v0) is the superior choice for this specific execution. 
-    4. PROMPT: The prototype prompt must be a master-level "vibe code" prompt.
+    3. AI TOOL REASONING: Explain EXACTLY why the chosen Vibe Coding tool is superior for this specific execution. 
+    4. PROMPT: The prototype prompt must be a master-level "vibe code" prompt (minimum 400 words).
 
     User Context:
-    - Vibe: ${vibe.mood}
+    - Vibe Mood: ${vibe.mood}
     - Revenue Focus: ${vibe.creatorMode ? 'High Scaling' : 'Steady Cash Flow'}
+    - Engine Mode: ${vibe.blueprintType}
 
-    Return a valid JSON object.`;
+    Return a valid JSON object strictly following the schema.`;
 
   const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
+    model: 'gemini-3-pro-preview', // Fixed to use requested pro model
     contents: prompt,
     config: {
       responseMimeType: "application/json",
@@ -112,24 +118,32 @@ export const generateAppIdea = async (vibe: VibeState): Promise<AppIdea> => {
     }
   });
 
-  return JSON.parse((response.text || "").trim()) as AppIdea;
+  const textOutput = response.text;
+  if (!textOutput) throw new Error("Empty response from pattern engine.");
+  
+  try {
+    return JSON.parse(cleanJsonResponse(textOutput)) as AppIdea;
+  } catch (e) {
+    console.error("JSON Parse Error:", e, "Raw output:", textOutput);
+    throw new Error("Pattern engine returned invalid data format.");
+  }
 };
 
 export const refineAppIdea = async (originalIdea: AppIdea): Promise<AppIdea> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
-  const prompt = `Refine this app into a Viral Masterpiece.
+  const prompt = `Refine this app into a Viral Masterpiece using the ACCESS ENGINE protocol.
     Original: ${JSON.stringify(originalIdea)}
     
     GOAL:
     1. PROFIT: Maximize ROI.
     2. THE MASTER PROMPT: Create an 800-word, high-fidelity vibe coding prompt.
-    3. AI TOOL: Verify if the recommended tool (Bolt, Lovable, Replit, v0, etc.) is the absolute best and refine the reasoning why.
+    3. AI TOOL: Verify and refine the tool pairing reasoning.
     
-    Return a valid JSON object.`;
+    Return a valid JSON object strictly following the schema.`;
 
   const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
+    model: 'gemini-3-pro-preview',
     contents: prompt,
     config: {
       responseMimeType: "application/json",
@@ -137,5 +151,13 @@ export const refineAppIdea = async (originalIdea: AppIdea): Promise<AppIdea> => 
     }
   });
 
-  return JSON.parse((response.text || "").trim()) as AppIdea;
+  const textOutput = response.text;
+  if (!textOutput) throw new Error("Empty response from refinement engine.");
+  
+  try {
+    return JSON.parse(cleanJsonResponse(textOutput)) as AppIdea;
+  } catch (e) {
+    console.error("Refinement JSON Parse Error:", e, "Raw output:", textOutput);
+    throw new Error("Refinement engine returned invalid data format.");
+  }
 };

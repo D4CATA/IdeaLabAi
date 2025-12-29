@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -117,6 +118,26 @@
         background: #cbd5e1;
         border-radius: 10px;
         border: 2px solid #f1f5f9;
+      }
+
+      /* Print Optimization */
+      @media print {
+        body {
+          background: white !important;
+          color: black !important;
+        }
+        .blueprint-grid, nav, footer, button, .print-hidden {
+          display: none !important;
+        }
+        main {
+          margin: 0 !important;
+          padding: 0 !important;
+        }
+        .IdeaCard {
+          page-break-after: always;
+          box-shadow: none !important;
+          border: 1px solid #eee !important;
+        }
       }
     </style>
     <script type="importmap">

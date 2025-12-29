@@ -1,5 +1,8 @@
 
+export type LoadingStatus = 'idle' | 'generating' | 'refining';
+
 export interface AppIdea {
+  id: string; // Unique ID for key mapping
   name: string;
   tags: string[];
   vibeAesthetic: string;
@@ -7,7 +10,7 @@ export interface AppIdea {
   haloFeature: string; 
   whyBuildThis: string; 
   aiRecommendation: string; 
-  aiReasoning: string; // New field for vibe coding tool justification
+  aiReasoning: string; 
   promptPrototype: string; 
   keyFeatures: string[];
   techStack: {
