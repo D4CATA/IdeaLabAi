@@ -1,28 +1,38 @@
-
-export type LoadingStatus = 'idle' | 'generating' | 'refining';
+export type LoadingStatus = 'idle' | 'generating' | 'refining' | 'mutating';
 
 export interface AppIdea {
   id: string;
+  parentId?: string; // For Evolution Tree
   name: string;
   tags: string[];
   vibeAesthetic: string;
   coreConcept: string;
+  mockupImageUrl?: string; // AI generated visual
+  toolRecommendation: 'Bolt.new' | 'Lovable' | 'v0' | 'Replit Agent' | 'Cursor';
+  originalityScore: number;
+  marketGaps: string[];
   haloFeature: string; 
   whyBuildThis: string; 
   aiRecommendation: string; 
   aiReasoning: string; 
   promptPrototype: string; 
   keyFeatures: string[];
-  techStack: {
-    frontend: string;
-    backend: string;
-    ai: string;
-    architecture: string;
+  isClaimed?: boolean; // Premium Private Feature
+  targetAudience: {
+    persona: string;
+    painPoint: string;
+    acquisitionChannel: string;
   };
+  competitiveEdge: {
+    gap: string;
+    unfairAdvantage: string;
+    moat: string;
+  };
+  scalingRoadmap: string[];
   monetization: {
     strategy: string;
     pricingModel: string;
-    additionalStreams?: string[];
+    ltvEstimate: string;
   };
   viralStrategy: {
     tiktokHook: string;
@@ -39,7 +49,7 @@ export interface VibeState {
   mood: string;
   chaosMode: boolean;
   creatorMode: boolean;
-  blueprintType: 'standard' | 'viral-vibe';
+  blueprintType: 'solid-saas' | 'viral-growth';
 }
 
 export interface UserStats {
@@ -49,25 +59,25 @@ export interface UserStats {
   credits: number;
 }
 
+export interface ToastMessage {
+  id: string;
+  type: 'success' | 'error' | 'info' | 'warning';
+  message: string;
+}
+
 export interface Product {
   id: string;
   name: string;
   description: string;
   price: number;
-  features: string[];
   popular?: boolean;
+  features: string[];
 }
 
 export interface Order {
   id: string;
   productId: string;
   amount: number;
-  status: 'pending' | 'completed';
+  status: 'pending' | 'completed' | 'failed';
   timestamp: number;
-}
-
-export interface ToastMessage {
-  id: string;
-  type: 'success' | 'error' | 'info' | 'warning';
-  message: string;
 }

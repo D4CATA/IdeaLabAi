@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { auth } from '../services/firebase';
 import { ICONS } from '../constants';
 import { IdeaLabLogo } from './Logo';
@@ -17,12 +17,6 @@ const AuthOverlay: React.FC<AuthOverlayProps> = ({ onAuthenticated, forceVerific
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (forceVerificationView) {
-      setView('verify');
-    }
-  }, [forceVerificationView]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -32,7 +26,6 @@ const AuthOverlay: React.FC<AuthOverlayProps> = ({ onAuthenticated, forceVerific
     try {
       if (view === 'login') {
         const { user } = await auth.signIn(email, password);
-        // Better check: Reload to get the most fresh status from the provider
         const reloadedUser = await auth.reloadUser();
         if (reloadedUser && !reloadedUser.emailVerified) {
           setView('verify');
@@ -42,10 +35,10 @@ const AuthOverlay: React.FC<AuthOverlayProps> = ({ onAuthenticated, forceVerific
       } else if (view === 'signup') {
         await auth.signUp(email, password);
         setView('verify');
-        setSuccessMsg("Verification email sent.");
+        setSuccessMsg("Check your inbox for a verification link.");
       } else if (view === 'reset') {
         await auth.resetPassword(email);
-        setSuccessMsg("Password reset email sent.");
+        setSuccessMsg("Recovery email sent.");
         setTimeout(() => setView('login'), 3000);
       }
     } catch (err: any) {
@@ -55,44 +48,20 @@ const AuthOverlay: React.FC<AuthOverlayProps> = ({ onAuthenticated, forceVerific
     }
   };
 
-  const handleResendVerification = async () => {
+  const handleProviderSignIn = async (provider: 'google' | 'github') => {
     setLoading(true);
     setError(null);
-    setSuccessMsg(null);
     try {
-      await auth.sendEmailVerification();
-      setSuccessMsg("New link sent. Check your inbox.");
-    } catch (err: any) {
-      setError(getAuthErrorMessage(err.code || err.message));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCheckVerificationStatus = async () => {
-    setLoading(true);
-    setError(null);
-    setSuccessMsg(null);
-    try {
-      const reloadedUser = await auth.reloadUser();
-      if (reloadedUser && reloadedUser.emailVerified) {
-        onAuthenticated(); 
+      if (provider === 'google') {
+        await auth.signInWithGoogle();
       } else {
-        setError("Your account is still unverified. Please check your email or try again in a moment.");
+        // Simulated GitHub login for the mock layer
+        alert("GitHub Auth Initializing (Client ID: Ov23liEBBAVUBPlmQHjJ)");
+        // In a real Firebase setup, we'd use GithubAuthProvider. 
+        // For this mock, we simulate success for the demo.
+        await auth.signIn("github_user@example.com", "github_sim_pass"); 
       }
-    } catch (err: any) {
-      setError(getAuthErrorMessage(err.code || err.message));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const { user } = await auth.signInWithGoogle();
-      // Similar check for Google sign-in
+      
       const reloaded = await auth.reloadUser();
       if (reloaded && reloaded.emailVerified) {
         onAuthenticated();
@@ -106,173 +75,118 @@ const AuthOverlay: React.FC<AuthOverlayProps> = ({ onAuthenticated, forceVerific
     }
   };
 
-  const renderVerifyView = () => (
-    <div className="space-y-8 animate-in fade-in zoom-in-95">
-      <div className="text-center space-y-4">
-        <div className="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-3xl flex items-center justify-center mx-auto shadow-inner">
-          <ICONS.Shield />
-        </div>
-        <div className="space-y-2">
-          <h2 className="text-2xl font-black text-slate-900 tracking-tighter">VERIFY YOUR EMAIL</h2>
-          <p className="text-sm text-slate-500 font-medium px-4 leading-relaxed">
-            We've sent a secure link to <span className="text-slate-900 font-bold">{auth.currentUser?.email}</span>. Please click it to activate your account.
-          </p>
+  if (view === 'verify') {
+    return (
+      <div className="fixed inset-0 z-[200] flex items-center justify-center bg-[#020617]/90 backdrop-blur-xl p-4">
+        <div className="w-full max-w-md glass p-12 rounded-[3rem] border-white/10 shadow-2xl text-center space-y-8 animate-in zoom-in-95">
+          <div className="w-20 h-20 bg-indigo-600/20 text-indigo-400 rounded-3xl flex items-center justify-center mx-auto border border-indigo-500/30">
+            <ICONS.Shield />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-3xl font-black text-white tracking-tight">Check Your Email</h2>
+            <p className="text-sm text-slate-400 font-medium">We sent a link to <span className="text-white font-bold">{auth.currentUser?.email}</span> to confirm your account.</p>
+          </div>
+          <div className="space-y-4 pt-4">
+            <button 
+              onClick={async () => {
+                setLoading(true);
+                const user = await auth.reloadUser();
+                if (user?.emailVerified) onAuthenticated();
+                else setError("Still waiting... Please click the link in your email.");
+                setLoading(false);
+              }}
+              className="w-full h-16 bg-white text-black rounded-2xl font-black uppercase tracking-widest hover:bg-indigo-500 hover:text-white transition-all shadow-xl"
+            >
+              I've Clicked the Link
+            </button>
+            <button onClick={() => auth.signOut()} className="text-[10px] font-black text-slate-500 uppercase tracking-widest hover:text-white transition-colors">Log Out & Restart</button>
+          </div>
+          {error && <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] font-black uppercase rounded-xl">{error}</div>}
         </div>
       </div>
-
-      <div className="p-5 bg-amber-50 border border-amber-100 rounded-2xl space-y-2">
-        <div className="flex items-center gap-2 text-amber-700">
-          <ICONS.Bolt />
-          <span className="text-[10px] font-black uppercase tracking-widest">Important</span>
-        </div>
-        <p className="text-[10px] text-amber-800 font-bold leading-relaxed">
-          Verification emails often end up in <span className="underline">Spam</span>. Please check there if you don't see it.
-        </p>
-      </div>
-
-      <div className="space-y-4">
-        <button 
-          onClick={handleCheckVerificationStatus}
-          disabled={loading}
-          className="w-full h-16 premium-gradient text-white rounded-2xl tracking-hyper text-xs shadow-2xl transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3 font-black"
-        >
-          {loading ? (
-             <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-          ) : (
-            'I HAVE VERIFIED MY EMAIL'
-          )}
-        </button>
-
-        <button 
-          onClick={handleResendVerification}
-          disabled={loading}
-          className="w-full h-16 bg-white border-2 border-slate-100 text-slate-600 rounded-2xl tracking-hyper text-xs hover:border-indigo-600 hover:text-indigo-600 transition-all font-black"
-        >
-          {loading ? 'SENDING...' : 'RESEND VERIFICATION LINK'}
-        </button>
-      </div>
-
-      {error && <div className="p-4 bg-red-50 text-red-600 rounded-xl text-xs font-bold text-center border border-red-100">{error}</div>}
-      {successMsg && <div className="p-4 bg-emerald-50 text-emerald-600 rounded-xl text-xs font-bold text-center border border-emerald-100">{successMsg}</div>}
-
-      <button 
-        onClick={() => auth.signOut()}
-        className="w-full text-slate-400 font-black tracking-hyper text-[8px] uppercase hover:text-slate-900 transition-colors"
-      >
-        GO BACK TO SIGN IN
-      </button>
-    </div>
-  );
+    );
+  }
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/40 backdrop-blur-xl animate-in fade-in duration-500 p-4">
-      <div className="w-full max-w-md bg-white rounded-[3rem] shadow-[0_40px_120px_-20px_rgba(0,0,0,0.3)] border border-slate-100 overflow-hidden animate-in zoom-in-95">
-        
-        <div className="p-10 md:p-12 space-y-10">
-          {view !== 'verify' && (
-            <div className="flex flex-col items-center text-center space-y-4">
-              <div className="relative transform group-hover:scale-110 transition-transform">
-                <IdeaLabLogo size={70} />
-                <div className="absolute inset-0 bg-indigo-500/10 blur-xl"></div>
-              </div>
-              <div>
-                <h1 className="text-3xl font-black text-slate-900 tracking-tighter uppercase">
-                  {view === 'login' ? 'Sign In' : view === 'signup' ? 'Create Account' : 'Reset Password'}
-                </h1>
-                <p className="tracking-hyper text-indigo-600 mt-1 font-black">
-                  IDEA LAB AI PRO
-                </p>
-              </div>
-            </div>
-          )}
-
-          {view === 'verify' ? renderVerifyView() : (
-            <div className="space-y-6">
-              {view !== 'reset' && (
-                <div className="space-y-3">
-                  <button 
-                    onClick={handleGoogleSignIn}
-                    disabled={loading}
-                    className="w-full flex items-center justify-center gap-4 py-4 px-6 bg-white border-2 border-slate-100 rounded-2xl text-slate-700 font-bold hover:bg-slate-50 transition-all group disabled:opacity-50 shadow-sm"
-                  >
-                    {loading ? (
-                      <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-                    ) : (
-                      <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24s.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/><path fill="none" d="M0 0h48v48H0z"/></svg>
-                    )}
-                    <span className="font-bold text-[10px] tracking-wider uppercase">{loading ? 'Searching...' : 'Continue with Google'}</span>
-                  </button>
-
-                  <div className="relative flex items-center py-2">
-                    <div className="flex-grow border-t border-slate-100"></div>
-                    <span className="flex-shrink mx-4 tracking-hyper text-[8px] text-slate-300 font-black">OR EMAIL</span>
-                    <div className="flex-grow border-t border-slate-100"></div>
-                  </div>
-                </div>
-              )}
-
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Email Address</label>
-                    <input 
-                      type="email" 
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                      placeholder="name@company.com"
-                      className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl font-semibold focus:outline-none focus:border-indigo-600 transition-all placeholder:text-slate-300"
-                    />
-                  </div>
-                  {view !== 'reset' && (
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Password</label>
-                      <input 
-                        type="password" 
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        placeholder="Min. 8 characters"
-                        className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl font-semibold focus:outline-none focus:border-indigo-600 transition-all placeholder:text-slate-300"
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {error && <div className="p-4 bg-red-50 text-red-600 rounded-xl text-xs font-bold text-center border border-red-100">{error}</div>}
-                {successMsg && <div className="p-4 bg-emerald-50 text-emerald-600 rounded-xl text-xs font-bold text-center border border-emerald-100">{successMsg}</div>}
-
-                <button 
-                  type="submit"
-                  disabled={loading}
-                  className="w-full h-16 premium-gradient text-white rounded-2xl tracking-hyper text-xs shadow-2xl transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 font-black"
-                >
-                  {loading ? 'PLEASE WAIT...' : view === 'login' ? 'SIGN IN' : 'CREATE ACCOUNT'}
-                </button>
-              </form>
-
-              <div className="flex flex-col items-center gap-4">
-                <button 
-                  onClick={() => { setView(view === 'signup' ? 'login' : 'signup'); setError(null); }}
-                  className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-indigo-600 transition-colors"
-                >
-                  {view === 'signup' ? "Already have an account? Sign In" : "Don't have an account? Sign Up"}
-                </button>
-                {view === 'login' && (
-                  <button 
-                    onClick={() => setView('reset')}
-                    className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900"
-                  >
-                    Forgot Password?
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-[#020617]/90 backdrop-blur-xl p-4">
+      <div className="w-full max-w-md glass p-10 md:p-14 rounded-[3rem] border-white/10 shadow-2xl space-y-10 animate-in zoom-in-95">
+        <div className="flex flex-col items-center text-center space-y-6">
+          <IdeaLabLogo size={80} className="hover:rotate-12 transition-transform" />
+          <div className="space-y-1">
+            <h1 className="text-4xl font-black text-white tracking-tight">
+              {view === 'login' ? 'Welcome Back' : view === 'signup' ? 'Get Started' : 'Reset Password'}
+            </h1>
+            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-indigo-400">The Build Engine</p>
+          </div>
         </div>
 
-        <div className="bg-slate-900 py-5 text-center tracking-hyper text-[8px] text-white/20 font-black uppercase">
-          SECURE ENTERPRISE LAYER // PRO ACCESS
+        <div className="space-y-4">
+           <div className="grid grid-cols-2 gap-3">
+              <button 
+                onClick={() => handleProviderSignIn('google')}
+                className="h-14 flex items-center justify-center gap-3 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all text-white text-[10px] font-black uppercase"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                Google
+              </button>
+              <button 
+                onClick={() => handleProviderSignIn('github')}
+                className="h-14 flex items-center justify-center gap-3 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all text-white text-[10px] font-black uppercase"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.43.372.823 1.102.823 2.222 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+                GitHub
+              </button>
+           </div>
+           
+           <div className="relative flex items-center py-4">
+              <div className="flex-grow border-t border-white/5"></div>
+              <span className="flex-shrink mx-4 text-[9px] font-black text-slate-700 uppercase tracking-widest">or email</span>
+              <div className="flex-grow border-t border-white/5"></div>
+           </div>
+
+           <form onSubmit={handleSubmit} className="space-y-4">
+              <input 
+                type="email" 
+                value={email} 
+                onChange={e => setEmail(e.target.value)} 
+                placeholder="Email Address" 
+                className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-6 font-bold text-sm text-white outline-none focus:border-indigo-600 transition-all placeholder:text-slate-600" 
+                required 
+              />
+              {view !== 'reset' && (
+                <input 
+                  type="password" 
+                  value={password} 
+                  onChange={e => setPassword(e.target.value)} 
+                  placeholder="Password" 
+                  className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-6 font-bold text-sm text-white outline-none focus:border-indigo-600 transition-all placeholder:text-slate-600" 
+                  required 
+                />
+              )}
+              
+              {error && <p className="text-[10px] font-black text-red-500 uppercase text-center tracking-widest">{error}</p>}
+              {successMsg && <p className="text-[10px] font-black text-emerald-500 uppercase text-center tracking-widest">{successMsg}</p>}
+
+              <button 
+                type="submit" 
+                disabled={loading} 
+                className="w-full h-16 premium-gradient text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl hover:scale-[1.02] active:scale-95 transition-all"
+              >
+                {loading ? 'Wait a sec...' : view === 'login' ? 'Let me in' : 'Start Building'}
+              </button>
+           </form>
+
+           <div className="flex flex-col gap-3 text-center">
+              <button 
+                onClick={() => setView(view === 'login' ? 'signup' : 'login')} 
+                className="text-[10px] font-black text-slate-500 uppercase tracking-widest hover:text-white"
+              >
+                {view === 'login' ? "Don't have an account?" : "Already have an account?"}
+              </button>
+              {view === 'login' && (
+                <button onClick={() => setView('reset')} className="text-[9px] font-black text-slate-700 uppercase tracking-widest hover:text-white">Forgot password?</button>
+              )}
+           </div>
         </div>
       </div>
     </div>

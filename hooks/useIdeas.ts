@@ -1,10 +1,9 @@
-
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { AppIdea, VibeState, LoadingStatus } from '../types';
-import { generateAppIdea, refineAppIdea } from '../services/geminiService';
+import { generateAppIdea, refineAppIdea, mutateAppIdea } from '../services/geminiService';
 import { ERROR_MESSAGES } from '../constants';
 import { generateUUID, isRateLimitError } from '../utils/helpers';
-import { saveIdeaToVault, getSavedIdeas, deleteIdeaFromVault, auth } from '../services/firebase';
+import { saveIdeaToVault, getSavedIdeas, deleteIdeaFromVault, auth, createOrUpdateUser } from '../services/firebase';
 
 const IDEAS_STORAGE_KEY = 'idealab_cached_session_ideas';
 
@@ -15,7 +14,6 @@ export function useIdeas() {
   const [error, setError] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Load generated ideas from localStorage on mount
   useEffect(() => {
     const cached = localStorage.getItem(IDEAS_STORAGE_KEY);
     if (cached) {
@@ -27,12 +25,10 @@ export function useIdeas() {
     }
   }, []);
 
-  // Persist generated ideas to localStorage
   useEffect(() => {
     localStorage.setItem(IDEAS_STORAGE_KEY, JSON.stringify(ideas));
   }, [ideas]);
 
-  // Initialize and Sync Vault based on Auth status
   useEffect(() => {
     const loadVault = async () => {
       if (auth.currentUser) {
@@ -46,62 +42,61 @@ export function useIdeas() {
         setVault([]);
       }
     };
-    
-    // Create a listener for auth changes if needed, but the current useAuth hook 
-    // and manual sync inside onAuthStateChanged already handles the reference update.
-    // We add auth.currentUser as dependency to trigger refresh when login completes.
     loadVault();
   }, [auth.currentUser?.uid]);
 
   const clearError = useCallback(() => setError(null), []);
 
-  const generate = useCallback(async (vibe: VibeState, onComplete?: (idea: AppIdea) => void) => {
-    if (abortControllerRef.current) abortControllerRef.current.abort();
-    abortControllerRef.current = new AbortController();
-
+  const generate = useCallback(async (vibe: VibeState) => {
     setStatus('generating');
     setError(null);
-
     try {
       const result = await generateAppIdea(vibe);
       const ideaWithId = { ...result, id: generateUUID() };
       setIdeas(prev => [ideaWithId, ...prev]);
-      if (onComplete) onComplete(ideaWithId);
       return ideaWithId;
-    } catch (err: unknown) {
-      if (err instanceof DOMException && err.name === 'AbortError') return;
-      console.error('Generation Error:', err);
-      if (isRateLimitError(err)) {
-        setError(ERROR_MESSAGES.RATE_LIMIT);
-      } else {
-        setError(ERROR_MESSAGES.GENERATION_FAILED);
-      }
+    } catch (err: any) {
+      setError(ERROR_MESSAGES.GENERATION_FAILED);
     } finally {
       setStatus('idle');
     }
   }, []);
 
-  const refine = useCallback(async (index: number) => {
-    if (index < 0 || index >= ideas.length) return;
+  const mutate = useCallback(async (ideaId: string) => {
+    const ideaToMutate = ideas.find(i => i.id === ideaId) || vault.find(i => i.id === ideaId);
+    if (!ideaToMutate) return;
 
-    const ideaToRefine = ideas[index];
-    setStatus('refining');
+    setStatus('mutating');
     setError(null);
+    try {
+      const result = await mutateAppIdea(ideaToMutate);
+      const mutatedIdea = { ...result, id: generateUUID(), parentId: ideaToMutate.id };
+      setIdeas(prev => [mutatedIdea, ...prev]);
+      return mutatedIdea;
+    } catch (err: any) {
+      setError("Mutation failed.");
+    } finally {
+      setStatus('idle');
+    }
+  }, [ideas, vault]);
 
+  const refine = useCallback(async (ideaId: string) => {
+    const isFromVault = vault.some(i => i.id === ideaId);
+    const ideaToRefine = isFromVault ? vault.find(i => i.id === ideaId) : ideas.find(i => i.id === ideaId);
+    if (!ideaToRefine) return;
+
+    setStatus('refining');
     try {
       const result = await refineAppIdea(ideaToRefine);
       const refinedIdea = { ...result, id: ideaToRefine.id };
-      setIdeas(prev => {
-        const newIdeas = [...prev];
-        newIdeas[index] = refinedIdea;
-        return newIdeas;
-      });
-      // If it was already in vault, update it there too
-      if (vault.some(i => i.id === refinedIdea.id)) {
-        saveToVault(refinedIdea);
+      
+      if (isFromVault) {
+        setVault(prev => prev.map(i => i.id === ideaId ? refinedIdea : i));
+        await saveIdeaToVault(auth.currentUser!.uid, refinedIdea);
+      } else {
+        setIdeas(prev => prev.map(i => i.id === ideaId ? refinedIdea : i));
       }
-    } catch (err: unknown) {
-      console.error('Refinement Error:', err);
+    } catch (err: any) {
       setError(ERROR_MESSAGES.REFINEMENT_FAILED);
     } finally {
       setStatus('idle');
@@ -112,14 +107,23 @@ export function useIdeas() {
     if (!auth.currentUser) return;
     try {
       await saveIdeaToVault(auth.currentUser.uid, idea);
-      setVault(prev => {
-        const filtered = prev.filter(i => i.id !== idea.id);
-        return [idea, ...filtered];
-      });
+      setVault(prev => [idea, ...prev.filter(i => i.id !== idea.id)]);
     } catch (e) {
-      console.error("Failed to save idea:", e);
+      console.error("Save failed:", e);
     }
   }, []);
+
+  const claimIdea = useCallback(async (ideaId: string) => {
+    if (!auth.currentUser?.isPro) return;
+    try {
+      const idea = ideas.find(i => i.id === ideaId) || vault.find(i => i.id === ideaId);
+      if (!idea) return;
+      const claimed = { ...idea, isClaimed: true };
+      await saveIdeaToVault(auth.currentUser.uid, claimed);
+      setVault(prev => [claimed, ...prev.filter(i => i.id !== ideaId)]);
+      return true;
+    } catch (e) { return false; }
+  }, [ideas, vault]);
 
   const removeFromVault = useCallback(async (ideaId: string) => {
     if (!auth.currentUser) return;
@@ -127,9 +131,9 @@ export function useIdeas() {
       await deleteIdeaFromVault(auth.currentUser.uid, ideaId);
       setVault(prev => prev.filter(i => i.id !== ideaId));
     } catch (e) {
-      console.error("Failed to delete idea:", e);
+      console.error("Delete failed:", e);
     }
   }, []);
 
-  return { ideas, vault, status, error, generate, refine, saveToVault, removeFromVault, clearError };
+  return { ideas, vault, status, error, generate, mutate, refine, claimIdea, saveToVault, removeFromVault, clearError };
 }

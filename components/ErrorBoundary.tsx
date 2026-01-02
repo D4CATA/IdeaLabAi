@@ -3,7 +3,7 @@ import React, { Component, ErrorInfo, ReactNode } from 'react';
 
 interface Props {
   /**
-   * Fix: Make children optional to satisfy JSX expectations in React 18+ where children are passed as nested elements
+   * Children are optional to satisfy React 18+ expectations.
    */
   children?: ReactNode;
 }
@@ -16,24 +16,24 @@ interface State {
 /**
  * ErrorBoundary component to catch and handle rendering errors gracefully.
  */
-// Fix: Explicitly use React.Component to ensure the class correctly inherits properties like props and state
-class ErrorBoundary extends React.Component<Props, State> {
-  // Fix: Initialize state property without 'override' as it might cause recognition issues in this environment
+// Fix: Extending Component directly from 'react' helps TypeScript correctly infer the existence of 'this.props'.
+class ErrorBoundary extends Component<Props, State> {
+  // Fix: Declare state with explicit typing to ensure the class matches the expected Component structure.
   public state: State = {
     hasError: false
   };
 
-  // Fix: Static method for deriving state from errors correctly typed
+  // Fix: Static method to update state after an error occurs in a child component.
   public static getDerivedStateFromError(error: Error): State {
     return { hasError: true, error };
   }
 
-  // Fix: Remove 'override' keyword to resolve compiler errors regarding base class recognition
+  // Fix: Lifecycle method to perform side-effects like logging after an error is caught.
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Uncaught error:', error, errorInfo);
   }
 
-  // Fix: Remove 'override' keyword and ensure inheritance from React.Component for proper 'props' access
+  // Fix: Standard render method for class-based components.
   public render() {
     if (this.state.hasError) {
       return (
@@ -55,7 +55,7 @@ class ErrorBoundary extends React.Component<Props, State> {
       );
     }
 
-    // Fix: Access children from this.props which is correctly inherited from React.Component
+    // Fix: Correctly access children from this.props which is inherited from the React Component class.
     return this.props.children || null;
   }
 }
