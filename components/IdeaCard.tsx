@@ -64,6 +64,7 @@ const IdeaCard: React.FC<IdeaCardProps> = memo(({ idea, userStats, onRefine, onM
         <div className="flex-grow space-y-8">
           <div className="flex flex-wrap items-center gap-4">
             <span className="px-4 py-1.5 bg-indigo-600 text-white rounded-lg text-[9px] font-black uppercase tracking-widest">{idea.difficulty}</span>
+            <span className="px-4 py-1.5 bg-white text-black rounded-lg text-[9px] font-black uppercase tracking-widest border border-white animate-pulse">{idea.successTag || "Must Succeed"}</span>
             <span className="text-[11px] font-black text-indigo-400 uppercase tracking-[0.3em] px-4 border-l border-white/10">{idea.vibeAesthetic}</span>
             <div className="flex gap-2">
               {idea.tags.map(tag => (

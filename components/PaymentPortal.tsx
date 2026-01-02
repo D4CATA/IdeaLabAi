@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { ICONS, PRODUCTS, PAYPAL_BASE_URL, VERIFICATION_CSV_URL, SUPPORT_EMAIL } from '../constants';
 import { Product, Order } from '../types';
@@ -102,7 +101,7 @@ const PaymentPortal: React.FC<PaymentPortalProps> = ({ onClose, onSuccess }) => 
             </div>
             <div className="space-y-4">
               <h2 className="text-3xl font-black text-slate-900 tracking-tight">Verifying Activation</h2>
-              <p className="text-slate-500 font-medium">Awaiting payment of <strong>${pendingOrder.amount}</strong>. Your plan will activate instantly.</p>
+              <p className="text-slate-500 font-medium">Awaiting payment of <strong>${pendingOrder.amount}</strong>. Your account will update instantly.</p>
             </div>
             <div className="bg-slate-50 p-6 rounded-3xl border border-dashed border-slate-200 text-left space-y-4">
               <div className="flex justify-between items-center text-xs font-black uppercase tracking-widest text-slate-400">
@@ -179,7 +178,12 @@ const PaymentPortal: React.FC<PaymentPortalProps> = ({ onClose, onSuccess }) => 
                     ))}
                   </ul>
                 </div>
-                <div className="flex items-baseline gap-1 pt-6 border-t border-slate-50"><span className="text-4xl font-black text-slate-900">${product.price}</span><span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">/mo</span></div>
+                <div className="flex items-baseline gap-1 pt-6 border-t border-slate-50">
+                  <span className="text-4xl font-black text-slate-900">${product.price}</span>
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                    {product.type === 'subscription' ? '/mo' : ' total'}
+                  </span>
+                </div>
               </div>
             ))}
             
@@ -192,7 +196,7 @@ const PaymentPortal: React.FC<PaymentPortalProps> = ({ onClose, onSuccess }) => 
 
           <div className="space-y-8">
             <button onClick={handleProceedToPayment} className="w-full py-8 premium-gradient text-white rounded-[2.5rem] font-black uppercase tracking-[0.2em] text-[12px] shadow-3xl shadow-indigo-200 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-4">
-              Upgrade to {selectedProduct?.name} — ${selectedProduct?.price}
+              Get {selectedProduct?.name} — ${selectedProduct?.price}
             </button>
             <div className="grid grid-cols-3 gap-4 text-center">
               <div className="space-y-1">

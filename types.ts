@@ -5,6 +5,7 @@ export interface AppIdea {
   parentId?: string; // For Evolution Tree
   name: string;
   tags: string[];
+  successTag: string; // New: Catchy market tag like "Must Succeed"
   vibeAesthetic: string;
   coreConcept: string;
   mockupImageUrl?: string; // AI generated visual
@@ -70,6 +71,8 @@ export interface Product {
   name: string;
   description: string;
   price: number;
+  type: 'subscription' | 'credit_pack';
+  credits?: number;
   popular?: boolean;
   features: string[];
 }

@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { AppIdea, VibeState } from "../types";
 
@@ -7,6 +6,7 @@ const APP_IDEA_SCHEMA = {
   properties: {
     name: { type: Type.STRING },
     tags: { type: Type.ARRAY, items: { type: Type.STRING } },
+    successTag: { type: Type.STRING },
     vibeAesthetic: { type: Type.STRING },
     coreConcept: { type: Type.STRING },
     toolRecommendation: { type: Type.STRING, enum: ['Bolt.new', 'Lovable', 'v0', 'Replit Agent', 'Cursor'] },
@@ -68,7 +68,7 @@ const APP_IDEA_SCHEMA = {
     difficulty: { type: Type.STRING, enum: ['Beginner', 'Intermediate', 'Advanced'] }
   },
   required: [
-    "name", "tags", "vibeAesthetic", "coreConcept", "toolRecommendation", "originalityScore",
+    "name", "tags", "successTag", "vibeAesthetic", "coreConcept", "toolRecommendation", "originalityScore",
     "marketGaps", "haloFeature", "whyBuildThis", "aiRecommendation", "aiReasoning", "promptPrototype", 
     "keyFeatures", "targetAudience", "competitiveEdge", "scalingRoadmap", 
     "monetization", "viralStrategy", "socialProof", "difficulty"
@@ -81,12 +81,12 @@ Generate unique, attractive app ideas that one person can build using modern too
 2. Originality Score: 1-100 (Be honest about competition).
 3. Tool Choice: Bolt.new, Lovable, v0, etc.
 4. Prompt Prototype: 800+ word execution roadmap.
-5. Why Build This: A compelling, highly motivating reason that highlights the market opportunity and personal leverage.`;
+5. Why Build This: A compelling, highly motivating reason that highlights the market opportunity and personal leverage.
+6. Success Tag: Create a high-energy, 2-word label for the strategy (e.g., "Must Succeed", "High Alpha", "Pure Signal", "Market Disruptor", "Hidden Gem").`;
 
 async function generateMockup(ideaName: string, concept: string): Promise<string | undefined> {
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    // Fix: Use the standard object format for contents as recommended in SDK documentation.
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash-image',
       contents: {
@@ -172,6 +172,6 @@ export const refineAppIdea = async (originalIdea: AppIdea): Promise<AppIdea> => 
 
   if (!response.text) throw new Error("Refinement Failed");
   const idea = JSON.parse(response.text.trim()) as AppIdea;
-  idea.mockupImageUrl = originalIdea.mockupImageUrl; // Reuse mockup if refining logic
+  idea.mockupImageUrl = originalIdea.mockupImageUrl; 
   return idea;
 };

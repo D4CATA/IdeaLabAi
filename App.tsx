@@ -1,10 +1,10 @@
 import React, { useState, useCallback, useRef, Suspense, lazy, useMemo, useEffect } from 'react';
-import { VibeState, UserStats, AppIdea, ToastMessage } from './types';
+import { VibeState, UserStats, AppIdea, ToastMessage, Product } from './types';
 import { createOrUpdateUser, setUserPlan, auth } from './services/firebase';
 import VibeForm from './components/VibeForm';
 import IdeaCard from './components/IdeaCard';
 import EvolutionTree from './components/EvolutionTree';
-import { MOODS, ICONS, PRO_TIER_GENERATIONS, FREE_TIER_GENERATIONS, STARTER_TIER_GENERATIONS } from './constants';
+import { MOODS, ICONS, PRO_TIER_GENERATIONS, PRODUCTS } from './constants';
 import { useAuth } from './hooks/useAuth';
 import { useIdeas } from './hooks/useIdeas';
 import { IdeaLabLogoFull } from './components/Logo';
@@ -43,56 +43,77 @@ const App: React.FC = () => {
     }
   }, [error, addToast, clearError]);
 
-  const handleGenerate = useCallback(async () => {
+  const checkCreditsAndRun = useCallback(async (action: () => Promise<any>) => {
     if (!user) return;
-    if (!user.emailVerified) {
+    
+    const isPro = user.isPro;
+    const credits = user.generationsLeft ?? 0;
+
+    if (!isPro && credits <= 0) {
+      addToast("Out of credits. Please top up to continue.", "warning");
+      setShowPaymentPortal(true);
+      return;
+    }
+
+    const result = await action();
+    if (result && !isPro) {
+      await createOrUpdateUser(user.uid, { generationsLeft: Math.max(0, credits - 1) });
+    }
+    return result;
+  }, [user, addToast]);
+
+  const handleGenerate = useCallback(async () => {
+    if (user && !user.emailVerified && user.email.includes('@')) {
       addToast("Please verify your email first.", "warning");
       return;
     }
-    
-    let limit = user.isPro ? PRO_TIER_GENERATIONS : (user.generationsLeft ?? 5);
-    if (limit <= 0) {
-      setShowPaymentPortal(true);
-      return;
-    }
-
-    const result = await generate(vibe);
-    if (result) {
-      addToast("Idea Successfully Synthesized", "success");
-      if (!user.isPro) {
-        await createOrUpdateUser(user.uid, { generationsLeft: Math.max(0, limit - 1) });
-      }
-    }
-  }, [user, vibe, generate, addToast]);
+    await checkCreditsAndRun(async () => {
+      const result = await generate(vibe);
+      if (result) addToast("Idea Successfully Synthesized", "success");
+      return result;
+    });
+  }, [user, vibe, generate, addToast, checkCreditsAndRun]);
 
   const handleRefine = useCallback(async (id: string) => {
-    if (!user?.isPro && (user?.generationsLeft || 0) <= 0) {
-      setShowPaymentPortal(true);
-      return;
-    }
-    await refine(id);
-    addToast("Strategy Polished", "success");
-    if (!user?.isPro) await createOrUpdateUser(user!.uid, { generationsLeft: Math.max(0, (user?.generationsLeft || 0) - 1) });
-  }, [user, refine, addToast]);
+    await checkCreditsAndRun(async () => {
+      await refine(id);
+      addToast("Strategy Polished", "success");
+      return true;
+    });
+  }, [refine, addToast, checkCreditsAndRun]);
 
   const handleMutate = useCallback(async (id: string) => {
-    if (!user?.isPro && (user?.generationsLeft || 0) <= 0) {
-      setShowPaymentPortal(true);
-      return;
-    }
-    const result = await mutate(id);
-    if (result) {
-      addToast("Evolution Successful", "success");
-      if (!user?.isPro) await createOrUpdateUser(user!.uid, { generationsLeft: Math.max(0, (user?.generationsLeft || 0) - 1) });
-      setActiveTab('engine');
-    }
-  }, [user, mutate, addToast]);
+    await checkCreditsAndRun(async () => {
+      const result = await mutate(id);
+      if (result) {
+        addToast("Evolution Successful", "success");
+        setActiveTab('engine');
+      }
+      return result;
+    });
+  }, [mutate, addToast, checkCreditsAndRun]);
 
   const handleClaim = useCallback(async (id: string) => {
     const success = await claimIdea(id);
     if (success) addToast("Idea Claimed - This is now private.", "success");
-    else addToast("Upgrade to claim ideas.", "info");
+    else addToast("Upgrade to PRO to claim ideas.", "info");
   }, [claimIdea, addToast]);
+
+  const handlePaymentSuccess = useCallback(async (productId: string) => {
+    if (!user) return;
+    const product = PRODUCTS.find(p => p.id === productId);
+    if (!product) return;
+
+    if (product.type === 'subscription') {
+      await setUserPlan(user.uid, product.id as any);
+      addToast(`${product.name} Activated!`, "success");
+    } else if (product.type === 'credit_pack') {
+      const currentCredits = user.generationsLeft ?? 0;
+      await createOrUpdateUser(user.uid, { generationsLeft: currentCredits + (product.credits ?? 0) });
+      addToast(`Added ${product.credits} Credits!`, "success");
+    }
+    setShowPaymentPortal(false);
+  }, [user, addToast]);
 
   const filteredVault = useMemo(() => {
     if (!searchQuery.trim()) return vault;
@@ -133,20 +154,33 @@ const App: React.FC = () => {
               <button onClick={() => setActiveTab('library')} className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest ${activeTab === 'library' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}>MY VAULT</button>
             </div>
           </div>
+          
           <div className="flex items-center gap-6">
-            <div className="text-right flex flex-col">
-               <span className="text-[10px] font-black text-indigo-400 uppercase">{user.plan || 'GUEST'}</span>
-               <span className="text-[9px] font-bold text-slate-500">{(user.isPro ? '∞' : user.generationsLeft) || 0} CREDITS</span>
+            <div className="flex items-center gap-3 pr-4 border-r border-white/10">
+               <div className="text-right flex flex-col hidden sm:flex">
+                  <span className="text-[11px] font-black text-white uppercase leading-tight">{user.displayName || user.email.split('@')[0]}</span>
+                  <span className="text-[9px] font-bold text-indigo-400 uppercase tracking-widest">{user.plan || 'GUEST'} — {(user.isPro ? '∞' : user.generationsLeft) || 0} CREDITS</span>
+               </div>
+               {user.photoURL ? (
+                 <img src={user.photoURL} alt="Profile" className="w-10 h-10 rounded-full border border-white/20 shadow-lg" />
+               ) : (
+                 <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center font-black text-sm">{user.displayName?.[0] || user.email[0].toUpperCase()}</div>
+               )}
             </div>
-            {!user.isPro && (
-              <button onClick={() => setShowPaymentPortal(true)} className="px-5 py-2.5 bg-white text-black rounded-xl text-[10px] font-black uppercase hover:bg-indigo-500 hover:text-white transition-all">UPGRADE</button>
-            )}
-            <button onClick={logout} className="p-3 bg-white/5 rounded-xl hover:text-red-500 transition-all"><ICONS.Lock /></button>
+
+            <div className="flex items-center gap-4">
+              {!user.isPro && (
+                <button onClick={() => setShowPaymentPortal(true)} className="px-5 py-2.5 bg-white text-black rounded-xl text-[10px] font-black uppercase hover:bg-indigo-500 hover:text-white transition-all">REFILL</button>
+              )}
+              <button onClick={logout} className="p-3 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all" title="Sign Out">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+              </button>
+            </div>
           </div>
         </div>
       </nav>
 
-      <Suspense fallback={null}>{showPaymentPortal && <PaymentPortal onClose={() => setShowPaymentPortal(false)} onSuccess={() => addToast("Pro Active!", "success")} />}</Suspense>
+      <Suspense fallback={null}>{showPaymentPortal && <PaymentPortal onClose={() => setShowPaymentPortal(false)} onSuccess={handlePaymentSuccess} />}</Suspense>
 
       <main className="container mx-auto px-6 max-w-7xl pt-12 pb-24">
         {activeTab === 'engine' ? (
@@ -164,7 +198,7 @@ const App: React.FC = () => {
                  onUpgradeClick={() => setShowPaymentPortal(true)}
                  isLoading={status === 'generating'}
                  isPro={user.isPro}
-                 isVerified={user.emailVerified ?? false}
+                 isVerified={user.emailVerified ?? true}
                  generationsLeft={user.generationsLeft || 0}
                />
             </section>

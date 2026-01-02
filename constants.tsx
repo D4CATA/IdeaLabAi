@@ -6,7 +6,7 @@ export const STARTER_TIER_GENERATIONS = 25;
 export const PRO_TIER_GENERATIONS = 999999;
 
 export const ERROR_MESSAGES = {
-  GENERATION_LIMIT: "Plan limit reached. Upgrade to continue extraction.",
+  GENERATION_LIMIT: "Out of credits. Top up to keep generating.",
   GENERATION_FAILED: "Synthesis encountered an error. Please try again.",
   REFINEMENT_FAILED: "Optimization rejected. Complexity too high.",
   RATE_LIMIT: "Cooling systems active. Please wait 60 seconds.",
@@ -53,25 +53,38 @@ export const MOODS = ['Productive Flow', 'Disruptive Tech', 'Mindful Minimal', '
 
 export const PRODUCTS: Product[] = [
   {
+    id: 'pack_small',
+    name: 'Pack: 10 Credits',
+    description: 'One-time top up.',
+    price: 3,
+    type: 'credit_pack',
+    credits: 10,
+    features: ['10 Extractions', 'Permanent Access to Results', 'Standard Support']
+  },
+  {
     id: 'starter',
-    name: 'Starter',
+    name: 'Starter Plan',
     description: 'Perfect for individual developers.',
     price: 9,
+    type: 'subscription',
+    credits: 25,
     features: ['25 Extractions / mo', 'Viral Hook Synthesis', 'Tech Stack Blueprints']
   },
   {
     id: 'pro',
-    name: 'Pro',
+    name: 'Pro Engine',
     description: 'Best Value for builders.',
     price: 19,
+    type: 'subscription',
     popular: true,
     features: ['Unlimited Extractions', 'Full 1.5M Core Access', 'Priority Neural Link', 'Email Support']
   },
   {
     id: 'business',
-    name: 'Business',
+    name: 'Business Unit',
     description: 'For power users and small teams.',
     price: 49,
+    type: 'subscription',
     features: ['Everything in Pro', 'Custom Prompt Tuning', 'Dedicated Support', '3 Seat License']
   }
 ];
