@@ -5,6 +5,14 @@ export const FREE_TIER_GENERATIONS = 5;
 export const STARTER_TIER_GENERATIONS = 25;
 export const PRO_TIER_GENERATIONS = 999999;
 
+// AdMob Configuration from provided reference
+export const ADMOB_CONFIG = {
+  APP_ID: "ca-app-pub-4141773944616223~2890779766",
+  REWARDED_UNIT_ID: "ca-app-pub-4141773944616223/9169263563",
+  ADS_PER_CREDIT: 2,
+  AD_DURATION_SECONDS: 15
+};
+
 export const ERROR_MESSAGES = {
   GENERATION_LIMIT: "Out of credits. Top up to keep generating.",
   GENERATION_FAILED: "Synthesis encountered an error. Please try again.",
@@ -46,6 +54,9 @@ export const ICONS = {
   ),
   Bolt: () => (
     <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+  ),
+  Play: () => (
+    <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M5 3l14 9-14 9V3z"/></svg>
   )
 };
 

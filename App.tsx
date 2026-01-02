@@ -4,13 +4,14 @@ import { createOrUpdateUser, setUserPlan, auth } from './services/firebase';
 import VibeForm from './components/VibeForm';
 import IdeaCard from './components/IdeaCard';
 import EvolutionTree from './components/EvolutionTree';
-import { MOODS, ICONS, PRO_TIER_GENERATIONS, PRODUCTS } from './constants';
+import { MOODS, ICONS, PRO_TIER_GENERATIONS, PRODUCTS, ADMOB_CONFIG } from './constants';
 import { useAuth } from './hooks/useAuth';
 import { useIdeas } from './hooks/useIdeas';
 import { IdeaLabLogoFull } from './components/Logo';
 
 const PaymentPortal = lazy(() => import('./components/PaymentPortal'));
 const AuthOverlay = lazy(() => import('./components/AuthOverlay'));
+const AdRewardModal = lazy(() => import('./components/AdRewardModal'));
 
 const App: React.FC = () => {
   const { user, isChecking, logout } = useAuth();
@@ -21,6 +22,10 @@ const App: React.FC = () => {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [showPaymentPortal, setShowPaymentPortal] = useState(false);
   
+  // Ad Reward State
+  const [showAdModal, setShowAdModal] = useState(false);
+  const [adsWatchedCount, setAdsWatchedCount] = useState(0);
+
   const [vibe, setVibe] = useState<VibeState>({
     mood: MOODS[0],
     chaosMode: false,
@@ -50,7 +55,7 @@ const App: React.FC = () => {
     const credits = user.generationsLeft ?? 0;
 
     if (!isPro && credits <= 0) {
-      addToast("Out of credits. Please top up to continue.", "warning");
+      addToast("Out of credits. Watch ads or top up to continue.", "warning");
       setShowPaymentPortal(true);
       return;
     }
@@ -115,6 +120,25 @@ const App: React.FC = () => {
     setShowPaymentPortal(false);
   }, [user, addToast]);
 
+  // Reward Ad Handlers
+  const handleAdComplete = useCallback(async () => {
+    if (!user) return;
+    const nextCount = adsWatchedCount + 1;
+    
+    if (nextCount >= ADMOB_CONFIG.ADS_PER_CREDIT) {
+      // Reward the user
+      const currentCredits = user.generationsLeft ?? 0;
+      await createOrUpdateUser(user.uid, { generationsLeft: currentCredits + 1 });
+      addToast("Reward Earned: +1 Credit Added!", "success");
+      setAdsWatchedCount(0);
+      setShowAdModal(false);
+    } else {
+      setAdsWatchedCount(nextCount);
+      addToast(`1/2 Ads Watched. One more for a credit!`, "info");
+      setShowAdModal(false);
+    }
+  }, [user, adsWatchedCount, addToast]);
+
   const filteredVault = useMemo(() => {
     if (!searchQuery.trim()) return vault;
     const q = searchQuery.toLowerCase();
@@ -170,6 +194,14 @@ const App: React.FC = () => {
 
             <div className="flex items-center gap-4">
               {!user.isPro && (
+                <button 
+                  onClick={() => setShowAdModal(true)} 
+                  className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600/20 border border-indigo-600/30 text-indigo-400 rounded-xl text-[10px] font-black uppercase hover:bg-indigo-600 hover:text-white transition-all group"
+                >
+                  <ICONS.Play /> {adsWatchedCount}/2 Ads
+                </button>
+              )}
+              {!user.isPro && (
                 <button onClick={() => setShowPaymentPortal(true)} className="px-5 py-2.5 bg-white text-black rounded-xl text-[10px] font-black uppercase hover:bg-indigo-500 hover:text-white transition-all">REFILL</button>
               )}
               <button onClick={logout} className="p-3 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all" title="Sign Out">
@@ -181,6 +213,7 @@ const App: React.FC = () => {
       </nav>
 
       <Suspense fallback={null}>{showPaymentPortal && <PaymentPortal onClose={() => setShowPaymentPortal(false)} onSuccess={handlePaymentSuccess} />}</Suspense>
+      <Suspense fallback={null}>{showAdModal && <AdRewardModal adsWatched={adsWatchedCount} onComplete={handleAdComplete} onClose={() => setShowAdModal(false)} />}</Suspense>
 
       <main className="container mx-auto px-6 max-w-7xl pt-12 pb-24">
         {activeTab === 'engine' ? (

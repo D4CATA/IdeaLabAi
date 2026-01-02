@@ -5,6 +5,7 @@ import { Product, Order } from '../types';
 interface PaymentPortalProps {
   onClose: () => void;
   onSuccess: (planId: string) => void;
+  onWatchAd?: () => void;
 }
 
 const SUCCESS_STORIES = [
@@ -13,7 +14,7 @@ const SUCCESS_STORIES = [
   { name: "Jason W.", role: "Agency Founder", text: "We use the Idea Engine to validate client concepts now. It's paid for itself 100x over.", stars: 5, verified: true }
 ];
 
-const PaymentPortal: React.FC<PaymentPortalProps> = ({ onClose, onSuccess }) => {
+const PaymentPortal: React.FC<PaymentPortalProps> = ({ onClose, onSuccess, onWatchAd }) => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(PRODUCTS.find(p => p.popular) || PRODUCTS[1]);
   const [pendingOrder, setPendingOrder] = useState<Order | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -194,24 +195,26 @@ const PaymentPortal: React.FC<PaymentPortalProps> = ({ onClose, onSuccess }) => 
             </div>
           </div>
 
-          <div className="space-y-8">
+          <div className="space-y-6">
             <button onClick={handleProceedToPayment} className="w-full py-8 premium-gradient text-white rounded-[2.5rem] font-black uppercase tracking-[0.2em] text-[12px] shadow-3xl shadow-indigo-200 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-4">
               Get {selectedProduct?.name} — ${selectedProduct?.price}
             </button>
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div className="space-y-1">
-                <div className="text-slate-900 font-black text-xs">24/7</div>
-                <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Support</div>
-              </div>
-              <div className="space-y-1">
-                <div className="text-slate-900 font-black text-xs">SSL</div>
-                <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Secured</div>
-              </div>
-              <div className="space-y-1">
-                <div className="text-slate-900 font-black text-xs">4.9/5</div>
-                <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Rating</div>
-              </div>
+            
+            <div className="relative flex items-center py-2">
+               <div className="flex-grow border-t border-slate-200"></div>
+               <span className="flex-shrink mx-4 text-[9px] font-black text-slate-300 uppercase tracking-widest">or free reward</span>
+               <div className="flex-grow border-t border-slate-200"></div>
             </div>
+
+            <button 
+              onClick={() => {
+                onClose();
+                if (onWatchAd) onWatchAd();
+              }}
+              className="w-full py-5 bg-white border-2 border-slate-100 text-slate-900 rounded-[2.5rem] font-black uppercase tracking-[0.2em] text-[10px] hover:border-indigo-600 hover:text-indigo-600 transition-all flex items-center justify-center gap-4 shadow-xl shadow-slate-200/50"
+            >
+              <ICONS.Play /> Watch 2 Ads for +1 Credit
+            </button>
           </div>
         </div>
       </div>

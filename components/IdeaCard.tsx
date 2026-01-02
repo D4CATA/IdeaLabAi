@@ -64,7 +64,9 @@ const IdeaCard: React.FC<IdeaCardProps> = memo(({ idea, userStats, onRefine, onM
         <div className="flex-grow space-y-8">
           <div className="flex flex-wrap items-center gap-4">
             <span className="px-4 py-1.5 bg-indigo-600 text-white rounded-lg text-[9px] font-black uppercase tracking-widest">{idea.difficulty}</span>
-            <span className="px-4 py-1.5 bg-white text-black rounded-lg text-[9px] font-black uppercase tracking-widest border border-white animate-pulse">{idea.successTag || "Must Succeed"}</span>
+            <span className="px-4 py-1.5 bg-white text-black rounded-lg text-[9px] font-black uppercase tracking-widest border border-white animate-pulse shadow-[0_0_15px_rgba(255,255,255,0.4)]">
+              {idea.successTag || "Must Succeed"}
+            </span>
             <span className="text-[11px] font-black text-indigo-400 uppercase tracking-[0.3em] px-4 border-l border-white/10">{idea.vibeAesthetic}</span>
             <div className="flex gap-2">
               {idea.tags.map(tag => (
@@ -114,18 +116,31 @@ const IdeaCard: React.FC<IdeaCardProps> = memo(({ idea, userStats, onRefine, onM
             Branch Variation
           </button>
           <div className="flex gap-2">
-            {onClaim && !idea.isClaimed && (
+            {onClaim && (
               <button 
                 onClick={onClaim}
-                className="flex-grow h-16 rounded-2xl bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-indigo-500 transition-all flex items-center justify-center gap-2 shadow-2xl shadow-indigo-500/20"
+                disabled={idea.isClaimed}
+                className={`flex-grow h-16 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-2xl ${
+                  idea.isClaimed 
+                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 cursor-default shadow-emerald-500/20' 
+                  : 'bg-indigo-600 text-white hover:bg-indigo-500 shadow-indigo-500/20 active:scale-95'
+                }`}
               >
-                Claim Idea
+                {idea.isClaimed ? (
+                  <>
+                    <ICONS.Check /> CLAIMED
+                  </>
+                ) : (
+                  <>
+                    <ICONS.Shield /> Claim Idea
+                  </>
+                )}
               </button>
             )}
             {onSave && (
               <button 
                 onClick={() => !isSaved && onSave(idea)}
-                className={`w-16 h-16 rounded-2xl border-2 transition-all flex items-center justify-center ${isSaved ? 'bg-indigo-600/20 border-indigo-600/50 text-indigo-400' : 'bg-white/5 border-white/10 text-slate-400 hover:text-white'}`}
+                className={`w-16 h-16 rounded-2xl border-2 transition-all flex items-center justify-center ${isSaved ? 'bg-indigo-600/20 border-indigo-600/50 text-indigo-400' : 'bg-white/5 border-white/10 text-slate-400 hover:text-white hover:border-white/20'}`}
               >
                 {isSaved ? <ICONS.Check /> : <ICONS.Bolt />}
               </button>
@@ -133,7 +148,7 @@ const IdeaCard: React.FC<IdeaCardProps> = memo(({ idea, userStats, onRefine, onM
             {onRemove && (
               <button 
                 onClick={() => onRemove(idea.id)}
-                className="w-16 h-16 rounded-2xl border-2 border-white/5 text-slate-500 hover:text-red-500 transition-all flex items-center justify-center"
+                className="w-16 h-16 rounded-2xl border-2 border-white/5 text-slate-500 hover:text-red-500 hover:border-red-500/20 transition-all flex items-center justify-center"
               >
                 ×
               </button>
