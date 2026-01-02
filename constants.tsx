@@ -5,10 +5,10 @@ export const FREE_TIER_GENERATIONS = 5;
 export const STARTER_TIER_GENERATIONS = 25;
 export const PRO_TIER_GENERATIONS = 999999;
 
-// AdMob Configuration from provided reference
-export const ADMOB_CONFIG = {
-  APP_ID: "ca-app-pub-4141773944616223~2890779766",
-  REWARDED_UNIT_ID: "ca-app-pub-4141773944616223/9169263563",
+// AdSense Configuration (Migrated from AdMob)
+export const ADSENSE_CONFIG = {
+  CLIENT_ID: "ca-pub-4141773944616223",
+  SLOT_ID: "3994804415",
   ADS_PER_CREDIT: 2,
   AD_DURATION_SECONDS: 15
 };

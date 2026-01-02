@@ -4,7 +4,7 @@ import { createOrUpdateUser, setUserPlan, auth } from './services/firebase';
 import VibeForm from './components/VibeForm';
 import IdeaCard from './components/IdeaCard';
 import EvolutionTree from './components/EvolutionTree';
-import { MOODS, ICONS, PRO_TIER_GENERATIONS, PRODUCTS, ADMOB_CONFIG } from './constants';
+import { MOODS, ICONS, PRO_TIER_GENERATIONS, PRODUCTS, ADSENSE_CONFIG } from './constants';
 import { useAuth } from './hooks/useAuth';
 import { useIdeas } from './hooks/useIdeas';
 import { IdeaLabLogoFull } from './components/Logo';
@@ -125,7 +125,7 @@ const App: React.FC = () => {
     if (!user) return;
     const nextCount = adsWatchedCount + 1;
     
-    if (nextCount >= ADMOB_CONFIG.ADS_PER_CREDIT) {
+    if (nextCount >= ADSENSE_CONFIG.ADS_PER_CREDIT) {
       // Reward the user
       const currentCredits = user.generationsLeft ?? 0;
       await createOrUpdateUser(user.uid, { generationsLeft: currentCredits + 1 });
@@ -212,7 +212,7 @@ const App: React.FC = () => {
         </div>
       </nav>
 
-      <Suspense fallback={null}>{showPaymentPortal && <PaymentPortal onClose={() => setShowPaymentPortal(false)} onSuccess={handlePaymentSuccess} />}</Suspense>
+      <Suspense fallback={null}>{showPaymentPortal && <PaymentPortal onClose={() => setShowPaymentPortal(false)} onSuccess={handlePaymentSuccess} onWatchAd={() => setShowAdModal(true)} />}</Suspense>
       <Suspense fallback={null}>{showAdModal && <AdRewardModal adsWatched={adsWatchedCount} onComplete={handleAdComplete} onClose={() => setShowAdModal(false)} />}</Suspense>
 
       <main className="container mx-auto px-6 max-w-7xl pt-12 pb-24">

@@ -1,4 +1,4 @@
-import React, { ErrorInfo, ReactNode } from 'react';
+import React, { Component, ErrorInfo, ReactNode } from 'react';
 
 interface Props {
   /**
@@ -15,24 +15,29 @@ interface State {
 /**
  * ErrorBoundary component to catch and handle rendering errors gracefully.
  */
-// Fix: Extending React.Component explicitly with generic types for Props and State to ensure properties like 'this.props' are correctly inherited and accessible within the class.
-class ErrorBoundary extends React.Component<Props, State> {
-  // Fix: Explicitly defining the initial state with public access modifier.
+// Fix: Extending Component explicitly and using a constructor with super(props) ensures 'this.props' is correctly recognized by the TypeScript compiler.
+class ErrorBoundary extends Component<Props, State> {
+  // Explicitly defining the initial state with public access.
   public state: State = {
     hasError: false
   };
 
-  // Fix: Static method to update state after an error occurs in a child component.
+  // Fix: The constructor is added to ensure that 'props' are correctly initialized and typed on the class instance.
+  constructor(props: Props) {
+    super(props);
+  }
+
+  // Static method to update state after an error occurs in a child component.
   public static getDerivedStateFromError(error: Error): State {
     return { hasError: true, error };
   }
 
-  // Fix: Lifecycle method to perform side-effects like logging after an error is caught.
+  // Lifecycle method to perform side-effects like logging after an error is caught.
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Uncaught error:', error, errorInfo);
   }
 
-  // Fix: Standard render method for class-based components.
+  // Standard render method for class-based components.
   public render() {
     if (this.state.hasError) {
       return (
@@ -58,7 +63,7 @@ class ErrorBoundary extends React.Component<Props, State> {
       );
     }
 
-    // Fix: Access children from 'this.props' which is guaranteed to be present on the instance of a class extending React.Component.
+    // Fix: Access children from 'this.props' which is now correctly defined on the class instance.
     return this.props.children || null;
   }
 }
