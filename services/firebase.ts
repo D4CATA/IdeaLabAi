@@ -1,4 +1,3 @@
-
 /**
  * FIREBASE REST SERVICE LAYER - PRODUCTION HARDENED
  */
@@ -11,6 +10,7 @@ export interface MockUser {
   plan?: 'free' | 'starter' | 'pro' | 'business' | 'enterprise';
   emailVerified?: boolean;
   generationsLeft: number;
+  lastDailyBonusDate?: string;
   createdAt: number;
   idToken: string;
   refreshToken: string;
@@ -96,6 +96,7 @@ const finalizeSignIn = async (data: any): Promise<MockUser> => {
     isPro: dbData?.isPro || false,
     plan: dbData?.plan || 'free',
     generationsLeft: dbData?.generationsLeft ?? 5,
+    lastDailyBonusDate: dbData?.lastDailyBonusDate,
     createdAt: dbData?.createdAt || Date.now()
   };
 

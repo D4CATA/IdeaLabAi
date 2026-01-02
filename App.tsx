@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useRef, Suspense, lazy, useMemo, useEffect } from 'react';
 import { VibeState, UserStats, AppIdea, ToastMessage } from './types';
 import { createOrUpdateUser, setUserPlan, auth } from './services/firebase';
@@ -40,6 +39,29 @@ const App: React.FC = () => {
       setToasts(prev => prev.filter(t => t.id !== id));
     }, 5000);
   }, []);
+
+  // DAILY BONUS LOGIC
+  useEffect(() => {
+    if (user && user.emailVerified) {
+      const today = new Date().toISOString().split('T')[0];
+      if (user.lastDailyBonusDate !== today) {
+        const checkAndAward = async () => {
+          try {
+            // Reward +1 blueprint daily for entering the site
+            const newCount = (user.generationsLeft || 0) + 1;
+            await createOrUpdateUser(user.uid, { 
+              generationsLeft: newCount,
+              lastDailyBonusDate: today 
+            });
+            addToast("Daily Architect Reward: +1 Extraction Blueprint Synchronized", "success");
+          } catch (e) {
+            console.error("Daily bonus sync failed", e);
+          }
+        };
+        checkAndAward();
+      }
+    }
+  }, [user?.uid, user?.emailVerified, user?.lastDailyBonusDate, addToast]);
 
   useEffect(() => {
     if (error) {

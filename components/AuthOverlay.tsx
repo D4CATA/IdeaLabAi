@@ -32,7 +32,9 @@ const AuthOverlay: React.FC<AuthOverlayProps> = ({ onAuthenticated, forceVerific
     try {
       if (view === 'login') {
         const { user } = await auth.signIn(email, password);
-        if (!user.emailVerified) {
+        // Better check: Reload to get the most fresh status from the provider
+        const reloadedUser = await auth.reloadUser();
+        if (reloadedUser && !reloadedUser.emailVerified) {
           setView('verify');
         } else {
           onAuthenticated();
@@ -72,10 +74,9 @@ const AuthOverlay: React.FC<AuthOverlayProps> = ({ onAuthenticated, forceVerific
     setError(null);
     setSuccessMsg(null);
     try {
-      // RELOAD USER FROM IDENTITY PROVIDER TO GET UPDATED STATUS
       const reloadedUser = await auth.reloadUser();
       if (reloadedUser && reloadedUser.emailVerified) {
-        onAuthenticated(); // Verification confirmed, proceed to app
+        onAuthenticated(); 
       } else {
         setError("Your account is still unverified. Please check your email or try again in a moment.");
       }
@@ -90,8 +91,14 @@ const AuthOverlay: React.FC<AuthOverlayProps> = ({ onAuthenticated, forceVerific
     setLoading(true);
     setError(null);
     try {
-      await auth.signInWithGoogle();
-      onAuthenticated();
+      const { user } = await auth.signInWithGoogle();
+      // Similar check for Google sign-in
+      const reloaded = await auth.reloadUser();
+      if (reloaded && reloaded.emailVerified) {
+        onAuthenticated();
+      } else {
+        setView('verify');
+      }
     } catch (err: any) {
       setError(getAuthErrorMessage(err.code || err.message));
     } finally {

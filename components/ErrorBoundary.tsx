@@ -2,7 +2,10 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 
 interface Props {
-  children: ReactNode;
+  /**
+   * Fix: Make children optional to satisfy JSX expectations in React 18+ where children are passed as nested elements
+   */
+  children?: ReactNode;
 }
 
 interface State {
@@ -13,23 +16,24 @@ interface State {
 /**
  * ErrorBoundary component to catch and handle rendering errors gracefully.
  */
-// Fixed: Explicitly extending Component with generics <Props, State> and adding a constructor to ensure 'this.props' is recognized by the compiler.
-class ErrorBoundary extends Component<Props, State> {
-  constructor(props: Props) {
-    super(props);
-    this.state = {
-      hasError: false
-    };
-  }
+// Fix: Explicitly use React.Component to ensure the class correctly inherits properties like props and state
+class ErrorBoundary extends React.Component<Props, State> {
+  // Fix: Initialize state property without 'override' as it might cause recognition issues in this environment
+  public state: State = {
+    hasError: false
+  };
 
+  // Fix: Static method for deriving state from errors correctly typed
   public static getDerivedStateFromError(error: Error): State {
     return { hasError: true, error };
   }
 
+  // Fix: Remove 'override' keyword to resolve compiler errors regarding base class recognition
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Uncaught error:', error, errorInfo);
   }
 
+  // Fix: Remove 'override' keyword and ensure inheritance from React.Component for proper 'props' access
   public render() {
     if (this.state.hasError) {
       return (
@@ -51,8 +55,8 @@ class ErrorBoundary extends Component<Props, State> {
       );
     }
 
-    // Now correctly recognized by TypeScript
-    return this.props.children;
+    // Fix: Access children from this.props which is correctly inherited from React.Component
+    return this.props.children || null;
   }
 }
 
