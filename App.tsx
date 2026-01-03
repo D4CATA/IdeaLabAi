@@ -55,7 +55,7 @@ const App: React.FC = () => {
     const credits = user.generationsLeft ?? 0;
 
     if (!isPro && credits <= 0) {
-      addToast("Out of credits. Watch ads or top up to continue.", "warning");
+      addToast("Out of credits. Refill or watch ads to continue.", "warning");
       setShowPaymentPortal(true);
       return;
     }
@@ -194,15 +194,7 @@ const App: React.FC = () => {
 
             <div className="flex items-center gap-4">
               {!user.isPro && (
-                <button 
-                  onClick={() => setShowAdModal(true)} 
-                  className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600/20 border border-indigo-600/30 text-indigo-400 rounded-xl text-[10px] font-black uppercase hover:bg-indigo-600 hover:text-white transition-all group"
-                >
-                  <ICONS.Play /> {adsWatchedCount}/2 Ads
-                </button>
-              )}
-              {!user.isPro && (
-                <button onClick={() => setShowPaymentPortal(true)} className="px-5 py-2.5 bg-white text-black rounded-xl text-[10px] font-black uppercase hover:bg-indigo-500 hover:text-white transition-all">REFILL</button>
+                <button onClick={() => setShowPaymentPortal(true)} className="px-5 py-2.5 bg-white text-black rounded-xl text-[10px] font-black uppercase hover:bg-indigo-500 hover:text-white transition-all shadow-xl shadow-white/5">REFILL</button>
               )}
               <button onClick={logout} className="p-3 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all" title="Sign Out">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -288,7 +280,7 @@ const App: React.FC = () => {
       
       <div className="fixed bottom-12 right-12 z-[200] flex flex-col gap-3">
         {toasts.map(t => (
-          <div key={t.id} className="glass px-6 py-4 rounded-2xl border-l-4 border-indigo-500 animate-in slide-in-from-right-10">
+          <div key={t.id} className="glass px-6 py-4 rounded-2xl border-l-4 border-indigo-500 animate-in slide-in-from-right-10 shadow-2xl">
             <span className="text-[10px] font-black uppercase tracking-widest">{t.message}</span>
           </div>
         ))}

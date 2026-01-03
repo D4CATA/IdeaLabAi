@@ -9,6 +9,7 @@ const APP_IDEA_SCHEMA = {
     successTag: { type: Type.STRING },
     vibeAesthetic: { type: Type.STRING },
     coreConcept: { type: Type.STRING },
+    synthesizedBy: { type: Type.STRING },
     toolRecommendation: { type: Type.STRING, enum: ['Bolt.new', 'Lovable', 'v0', 'Replit Agent', 'Cursor'] },
     originalityScore: { type: Type.NUMBER },
     marketGaps: { type: Type.ARRAY, items: { type: Type.STRING } },
@@ -60,15 +61,16 @@ const APP_IDEA_SCHEMA = {
         type: Type.OBJECT,
         properties: {
           platform: { type: Type.STRING },
+          authorName: { type: Type.STRING },
           quote: { type: Type.STRING }
         },
-        required: ["platform", "quote"]
+        required: ["platform", "authorName", "quote"]
       }
     },
     difficulty: { type: Type.STRING, enum: ['Beginner', 'Intermediate', 'Advanced'] }
   },
   required: [
-    "name", "tags", "successTag", "vibeAesthetic", "coreConcept", "toolRecommendation", "originalityScore",
+    "name", "tags", "successTag", "vibeAesthetic", "coreConcept", "synthesizedBy", "toolRecommendation", "originalityScore",
     "marketGaps", "haloFeature", "whyBuildThis", "aiRecommendation", "aiReasoning", "promptPrototype", 
     "keyFeatures", "targetAudience", "competitiveEdge", "scalingRoadmap", 
     "monetization", "viralStrategy", "socialProof", "difficulty"
@@ -82,7 +84,9 @@ Generate unique, attractive app ideas that one person can build using modern too
 3. Tool Choice: Bolt.new, Lovable, v0, etc.
 4. Prompt Prototype: 800+ word execution roadmap.
 5. Why Build This: A compelling, highly motivating reason that highlights the market opportunity and personal leverage.
-6. Success Tag: Create a high-energy, 2-word label for the strategy (e.g., "Must Succeed", "High Alpha", "Pure Signal", "Market Disruptor", "Hidden Gem").`;
+6. Success Tag: Create a high-energy, 2-word label for the strategy (e.g., "Must Succeed", "High Alpha", "Pure Signal", "Market Disruptor", "Hidden Gem").
+7. Synthesized By: Assign an AI Agent persona name (e.g., "Oracle-9", "Neon-Forge", "Alpha-Neural").
+8. Social Proof: Provide realistic reviewer names (e.g., "Alex M.", "Founder_X", "Sarah.eth") for each quote.`;
 
 async function generateMockup(ideaName: string, concept: string): Promise<string | undefined> {
   try {

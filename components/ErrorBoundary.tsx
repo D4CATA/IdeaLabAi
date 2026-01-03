@@ -16,8 +16,7 @@ interface State {
 /**
  * ErrorBoundary component to catch and handle rendering errors gracefully.
  */
-// Fix: Extending Component directly from 'react' ensures that 'this.props' is correctly 
-// recognized and typed by the TypeScript compiler on the class instance.
+// Fix: Explicitly import Component and use it for the class extension to ensure 'props' is correctly typed and recognized by the TypeScript compiler.
 class ErrorBoundary extends Component<Props, State> {
   // Initial state declaration.
   public state: State = {
@@ -60,7 +59,7 @@ class ErrorBoundary extends Component<Props, State> {
       );
     }
 
-    // Fix: Access children from 'this.props' which is correctly defined via inheritance from Component<Props, State>.
+    // Access children via this.props which is correctly inherited from the base Component class.
     return this.props.children || null;
   }
 }

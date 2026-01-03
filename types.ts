@@ -8,6 +8,7 @@ export interface AppIdea {
   successTag: string; // New: Catchy market tag like "Must Succeed"
   vibeAesthetic: string;
   coreConcept: string;
+  synthesizedBy: string; // New: AI Persona name (e.g., "Nexus-7", "Alpha-Mind")
   mockupImageUrl?: string; // AI generated visual
   toolRecommendation: 'Bolt.new' | 'Lovable' | 'v0' | 'Replit Agent' | 'Cursor';
   originalityScore: number;
@@ -41,6 +42,7 @@ export interface AppIdea {
   };
   socialProof: {
     platform: string;
+    authorName: string; // New: Specific nametag for the reviewer
     quote: string;
   }[];
   difficulty: 'Beginner' | 'Intermediate' | 'Advanced';

@@ -88,7 +88,7 @@ export const PRODUCTS: Product[] = [
     price: 19,
     type: 'subscription',
     popular: true,
-    features: ['Unlimited Extractions', 'Full 1.5M Core Access', 'Priority Neural Link', 'Email Support']
+    features: ['Unlimited Extractions', 'Private Idea Claims', 'Full 1.5M Core Access', 'Priority Neural Link', 'Email Support']
   },
   {
     id: 'business',
@@ -96,7 +96,7 @@ export const PRODUCTS: Product[] = [
     description: 'For power users and small teams.',
     price: 49,
     type: 'subscription',
-    features: ['Everything in Pro', 'Custom Prompt Tuning', 'Dedicated Support', '3 Seat License']
+    features: ['Everything in Pro', 'Unlimited Private Claims', 'Custom Prompt Tuning', 'Dedicated Support', '3 Seat License']
   }
 ];
 
