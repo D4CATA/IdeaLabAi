@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { auth } from '../services/firebase';
 import { ICONS } from '../constants';
 import { IdeaLabLogo } from './Logo';
@@ -17,6 +18,13 @@ const AuthOverlay: React.FC<AuthOverlayProps> = ({ onAuthenticated, forceVerific
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
+  // Fix: Sync view state with external forceVerificationView prop
+  useEffect(() => {
+    if (forceVerificationView) {
+      setView('verify');
+    }
+  }, [forceVerificationView]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -34,8 +42,12 @@ const AuthOverlay: React.FC<AuthOverlayProps> = ({ onAuthenticated, forceVerific
         }
       } else if (view === 'signup') {
         await auth.signUp(email, password);
+        // We stay in 'signup' mode for a tiny bit then onAuthStateChanged fires in parent,
+        // but since App.tsx handles the unverified state, we manually set view here too.
         setView('verify');
         setSuccessMsg("Check your inbox for a verification link.");
+        // Explicitly send verification email
+        await auth.sendEmailVerification();
       } else if (view === 'reset') {
         await auth.resetPassword(email);
         setSuccessMsg("Recovery email sent.");
@@ -55,7 +67,6 @@ const AuthOverlay: React.FC<AuthOverlayProps> = ({ onAuthenticated, forceVerific
       if (provider === 'google') {
         await auth.signInWithGoogle();
       } else {
-        // Now using real Firebase GitHub Authentication
         await auth.signInWithGitHub();
       }
       
@@ -89,16 +100,32 @@ const AuthOverlay: React.FC<AuthOverlayProps> = ({ onAuthenticated, forceVerific
                 setLoading(true);
                 const user = await auth.reloadUser();
                 if (user?.emailVerified) onAuthenticated();
-                else setError("Still waiting... Please click the link in your email.");
+                else setError("Still waiting... Please click the link in your email and then try this button again.");
                 setLoading(false);
               }}
               className="w-full h-16 bg-white text-black rounded-2xl font-black uppercase tracking-widest hover:bg-indigo-500 hover:text-white transition-all shadow-xl"
             >
-              I've Clicked the Link
+              {loading ? 'Confirming...' : "I've Clicked the Link"}
             </button>
-            <button onClick={() => auth.signOut()} className="text-[10px] font-black text-slate-500 uppercase tracking-widest hover:text-white transition-colors">Log Out & Restart</button>
+            <div className="flex flex-col gap-2">
+              <button 
+                onClick={async () => {
+                  try {
+                    await auth.sendEmailVerification();
+                    setSuccessMsg("Verification email resent!");
+                  } catch (e) {
+                    setError("Too many requests. Try again later.");
+                  }
+                }} 
+                className="text-[9px] font-black text-indigo-400 uppercase tracking-widest hover:text-white transition-colors"
+              >
+                Resend verification email
+              </button>
+              <button onClick={() => auth.signOut()} className="text-[10px] font-black text-slate-500 uppercase tracking-widest hover:text-white transition-colors">Log Out & Restart</button>
+            </div>
           </div>
           {error && <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] font-black uppercase rounded-xl">{error}</div>}
+          {successMsg && <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-[10px] font-black uppercase rounded-xl">{successMsg}</div>}
         </div>
       </div>
     );

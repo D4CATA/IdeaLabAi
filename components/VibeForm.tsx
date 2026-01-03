@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { MOODS, ICONS } from '../constants';
 import { VibeState } from '../types';
@@ -14,6 +15,9 @@ interface VibeFormProps {
 }
 
 const VibeForm: React.FC<VibeFormProps> = ({ vibe, setVibe, onGenerate, onUpgradeClick, isLoading, isPro, isVerified, generationsLeft }) => {
+  // Fix: Removed !isVerified from the disabled condition to allow all authenticated users to generate ideas.
+  const isButtonDisabled = isLoading || (!isPro && generationsLeft <= 0);
+
   return (
     <div className="w-full max-w-5xl mx-auto glass-card p-10 md:p-14 rounded-[3rem] space-y-12 shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] border-white/10">
       
@@ -90,7 +94,7 @@ const VibeForm: React.FC<VibeFormProps> = ({ vibe, setVibe, onGenerate, onUpgrad
         </div>
         <button
           onClick={onGenerate}
-          disabled={isLoading || !isVerified || (!isPro && generationsLeft <= 0)}
+          disabled={isButtonDisabled}
           className="group relative h-20 w-full md:w-96 overflow-hidden rounded-2xl transition-all active:scale-[0.98] disabled:opacity-20 shadow-2xl shadow-indigo-500/20"
         >
           <div className="absolute inset-0 premium-gradient group-hover:scale-105 transition-transform duration-700"></div>

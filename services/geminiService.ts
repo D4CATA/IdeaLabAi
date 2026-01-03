@@ -88,18 +88,19 @@ Generate unique, attractive app ideas that one person can build using modern too
 7. Synthesized By: Assign an AI Agent persona name (e.g., "Oracle-9", "Neon-Forge", "Alpha-Neural").
 8. Social Proof: Provide realistic reviewer names (e.g., "Alex M.", "Founder_X", "Sarah.eth") for each quote.`;
 
+const cleanJsonResponse = (text: string) => {
+  return text.replace(/```json\n?|```/g, '').trim();
+};
+
 async function generateMockup(ideaName: string, concept: string): Promise<string | undefined> {
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    // Using gemini-2.5-flash-image for default image generation as per guidelines.
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash-image',
       contents: {
         parts: [{
-          text: `A hyper-realistic, ultra-premium app UI mockup for a revolutionary app called "${ideaName}". 
-          The app concept is: ${concept}. 
-          Visual Style: Minimalist glassmorphism, sleek modern typography, vibrant accent colors, high-end product photography lighting. 
-          The mockup should be shown on a high-resolution smartphone floating in a clean, dark cinematic environment with subtle depth-of-field blur. 
-          Professional 8k render, trending on Dribbble and Behance.`,
+          text: `A hyper-realistic premium app UI mockup for "${ideaName}". Concept: ${concept}. Glassmorphism, modern typography, sleek smartphone floating in dark cinematic environment. Professional 8k render.`,
         }],
       },
       config: {
@@ -107,75 +108,106 @@ async function generateMockup(ideaName: string, concept: string): Promise<string
       }
     });
 
-    for (const part of response.candidates[0].content.parts) {
-      if (part.inlineData) {
-        return `data:image/png;base64,${part.inlineData.data}`;
+    if (response.candidates?.[0]?.content?.parts) {
+      for (const part of response.candidates[0].content.parts) {
+        if (part.inlineData) {
+          const base64EncodeString: string = part.inlineData.data;
+          return `data:image/png;base64,${base64EncodeString}`;
+        }
       }
     }
   } catch (e) {
-    console.warn("Mockup generation failed", e);
+    console.error("Mockup generation error:", e);
   }
   return undefined;
 }
 
 export const generateAppIdea = async (vibe: VibeState): Promise<AppIdea> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
-    contents: `Create a unique ${vibe.blueprintType} app idea. 
-    Vibe: ${vibe.mood}. Strategy: ${vibe.creatorMode ? 'High Profit' : 'Viral Growth'}. 
-    Wildness: ${vibe.chaosMode ? 'Very Unique' : 'Market Ready'}.`,
-    config: {
-      systemInstruction: SYSTEM_INSTRUCTION,
-      responseMimeType: "application/json",
-      responseSchema: APP_IDEA_SCHEMA,
-    }
-  });
+  try {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    // Upgrade to gemini-3-pro-preview for complex reasoning tasks like app strategy generation.
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-pro-preview',
+      contents: `Create a unique ${vibe.blueprintType} app idea. 
+      Vibe: ${vibe.mood}. Strategy: ${vibe.creatorMode ? 'High Profit' : 'Viral Growth'}. 
+      Wildness: ${vibe.chaosMode ? 'Very Unique' : 'Market Ready'}.`,
+      config: {
+        systemInstruction: SYSTEM_INSTRUCTION,
+        responseMimeType: "application/json",
+        responseSchema: APP_IDEA_SCHEMA,
+      }
+    });
 
-  if (!response.text) throw new Error("Generation Failed");
-  const idea = JSON.parse(response.text.trim()) as AppIdea;
-  
-  // Parallel generate mockup
-  idea.mockupImageUrl = await generateMockup(idea.name, idea.coreConcept);
-  
-  return idea;
+    // Access the .text property directly as per modern SDK guidelines.
+    const text = response.text;
+    if (!text) throw new Error("API returned no content");
+    
+    const cleanedText = cleanJsonResponse(text);
+    const idea = JSON.parse(cleanedText) as AppIdea;
+    
+    // Attempt mockup in parallel/background
+    try {
+      idea.mockupImageUrl = await generateMockup(idea.name, idea.coreConcept);
+    } catch (err) {
+      console.warn("Non-critical mockup failure", err);
+    }
+    
+    return idea;
+  } catch (error) {
+    console.error("Generation service failed:", error);
+    throw error;
+  }
 };
 
 export const mutateAppIdea = async (originalIdea: AppIdea): Promise<AppIdea> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  const response = await ai.models.generateContent({
-    model: 'gemini-3-pro-preview',
-    contents: `Take this idea and mutate it into a wild variation. 
-    Change the core audience or mechanic. Keep it buildable.
-    Idea: ${JSON.stringify(originalIdea)}`,
-    config: {
-      systemInstruction: SYSTEM_INSTRUCTION,
-      responseMimeType: "application/json",
-      responseSchema: APP_IDEA_SCHEMA,
-    }
-  });
+  try {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    // Using gemini-3-pro-preview for advanced logic mutation tasks.
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-pro-preview',
+      contents: `Take this idea and mutate it into a wild variation. 
+      Keep it buildable but change the primary logic.
+      Original: ${JSON.stringify(originalIdea)}`,
+      config: {
+        systemInstruction: SYSTEM_INSTRUCTION,
+        responseMimeType: "application/json",
+        responseSchema: APP_IDEA_SCHEMA,
+      }
+    });
 
-  if (!response.text) throw new Error("Mutation Failed");
-  const idea = JSON.parse(response.text.trim()) as AppIdea;
-  idea.mockupImageUrl = await generateMockup(idea.name, idea.coreConcept);
-  return idea;
+    const text = response.text;
+    if (!text) throw new Error("Mutation API returned no content");
+    const idea = JSON.parse(cleanJsonResponse(text)) as AppIdea;
+    idea.mockupImageUrl = await generateMockup(idea.name, idea.coreConcept);
+    return idea;
+  } catch (error) {
+    console.error("Mutation service failed:", error);
+    throw error;
+  }
 };
 
 export const refineAppIdea = async (originalIdea: AppIdea): Promise<AppIdea> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  const response = await ai.models.generateContent({
-    model: 'gemini-3-pro-preview',
-    contents: `Refine this strategy for maximum market appeal.
-    Original Idea: ${JSON.stringify(originalIdea)}`,
-    config: {
-      systemInstruction: SYSTEM_INSTRUCTION,
-      responseMimeType: "application/json",
-      responseSchema: APP_IDEA_SCHEMA,
-    }
-  });
+  try {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    // Using gemini-3-pro-preview for detailed refinement and market appeal optimization.
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-pro-preview',
+      contents: `Refine this strategy for maximum market appeal.
+      Original Idea: ${JSON.stringify(originalIdea)}`,
+      config: {
+        systemInstruction: SYSTEM_INSTRUCTION,
+        responseMimeType: "application/json",
+        responseSchema: APP_IDEA_SCHEMA,
+      }
+    });
 
-  if (!response.text) throw new Error("Refinement Failed");
-  const idea = JSON.parse(response.text.trim()) as AppIdea;
-  idea.mockupImageUrl = originalIdea.mockupImageUrl; 
-  return idea;
+    const text = response.text;
+    if (!text) throw new Error("Refinement API returned no content");
+    const idea = JSON.parse(cleanJsonResponse(text)) as AppIdea;
+    idea.mockupImageUrl = originalIdea.mockupImageUrl; 
+    return idea;
+  } catch (error) {
+    console.error("Refinement service failed:", error);
+    throw error;
+  }
 };

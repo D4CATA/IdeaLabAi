@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useRef, Suspense, lazy, useMemo, useEffect } from 'react';
 import { VibeState, UserStats, AppIdea, ToastMessage, Product } from './types';
 import { createOrUpdateUser, setUserPlan, auth } from './services/firebase';
@@ -51,7 +52,7 @@ const App: React.FC = () => {
   const checkCreditsAndRun = useCallback(async (action: () => Promise<any>) => {
     if (!user) return;
     
-    const isPro = user.isPro;
+    const isPro = !!user.isPro;
     const credits = user.generationsLeft ?? 0;
 
     if (!isPro && credits <= 0) {
@@ -68,16 +69,12 @@ const App: React.FC = () => {
   }, [user, addToast]);
 
   const handleGenerate = useCallback(async () => {
-    if (user && !user.emailVerified && user.email.includes('@')) {
-      addToast("Please verify your email first.", "warning");
-      return;
-    }
     await checkCreditsAndRun(async () => {
       const result = await generate(vibe);
       if (result) addToast("Idea Successfully Synthesized", "success");
       return result;
     });
-  }, [user, vibe, generate, addToast, checkCreditsAndRun]);
+  }, [vibe, generate, addToast, checkCreditsAndRun]);
 
   const handleRefine = useCallback(async (id: string) => {
     await checkCreditsAndRun(async () => {
@@ -156,10 +153,15 @@ const App: React.FC = () => {
     );
   }
 
-  if (!user) {
+  // Fix: Show AuthOverlay if user is missing OR if they exist but are not verified.
+  // This prevents the "flash and disappear" bug because the overlay stays mounted until verification is complete.
+  if (!user || !user.emailVerified) {
     return (
       <Suspense fallback={null}>
-        <AuthOverlay onAuthenticated={() => addToast("Connection Established", "success")} />
+        <AuthOverlay 
+          onAuthenticated={() => addToast("Connection Established", "success")} 
+          forceVerificationView={!!user && !user.emailVerified}
+        />
       </Suspense>
     );
   }
