@@ -1,4 +1,4 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import React, { ErrorInfo, ReactNode } from 'react';
 
 interface Props {
   /**
@@ -15,14 +15,14 @@ interface State {
 /**
  * ErrorBoundary component to catch and handle rendering errors gracefully.
  */
-// Fix: Extending Component explicitly and using a constructor with super(props) ensures 'this.props' is correctly recognized by the TypeScript compiler.
-class ErrorBoundary extends Component<Props, State> {
+// Fix: Extending React.Component explicitly ensures that 'this.props' is correctly recognized by the TypeScript compiler on the class instance.
+class ErrorBoundary extends React.Component<Props, State> {
   // Explicitly defining the initial state with public access.
   public state: State = {
     hasError: false
   };
 
-  // Fix: The constructor is added to ensure that 'props' are correctly initialized and typed on the class instance.
+  // Fix: The constructor is used to ensure that 'props' are correctly initialized and typed on the class instance by calling super(props).
   constructor(props: Props) {
     super(props);
   }
@@ -63,7 +63,7 @@ class ErrorBoundary extends Component<Props, State> {
       );
     }
 
-    // Fix: Access children from 'this.props' which is now correctly defined on the class instance.
+    // Fix: Access children from 'this.props' which is now correctly defined on the class instance after properly extending React.Component.
     return this.props.children || null;
   }
 }
